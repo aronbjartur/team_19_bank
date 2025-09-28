@@ -1,36 +1,37 @@
-package Controller;
+package is.hi.hbv501g.team_19_bank.Controller;
 
-import Service.UserService;
-import is.hi.hbv501g.team_19_bank.model.User;
+
+import is.hi.hbv501g.team_19_bank.Service.UserService;
+import is.hi.hbv501g.team_19_bank.model.BankUser;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController
 @RequestMapping("/users")
-public class UserController {
+@RestController
+public class BankUserController {
 
     private final UserService userService;
 
-    public UserController(UserService userService) {
+    public BankUserController(UserService userService) {
         this.userService = userService;
     }
 
     // Create new user
     @PostMapping
-    public User createUser(@RequestBody User user) {
+    public BankUser createUser(@RequestBody BankUser user) {
         return userService.createUser(user);
     }
 
     // Get all users
     @GetMapping
-    public List<User> getUsers() {
+    public List<BankUser> getUsers() {
         return userService.getAllUsers();
     }
 
     // Get user by ID
     @GetMapping("/{id}")
-    public User getUser(@PathVariable Long id) {
+    public BankUser getUser(@PathVariable Long id) {
         return userService.getUserById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }

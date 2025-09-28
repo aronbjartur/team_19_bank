@@ -3,23 +3,24 @@ package is.hi.hbv501g.team_19_bank.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "users")
 @Data
-public class User {
+public class BankUser {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     private String username;
     private String password;
-    private int creditScore;
     private String email;
+    private int creditScore;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Account> accounts;
+    private List<Account> accounts = new ArrayList<>();
 
     public double getTotalBalance() {
         return accounts.stream().mapToDouble(Account::getBalance).sum();
@@ -69,4 +70,3 @@ public class User {
         return accounts;
     }
 }
-

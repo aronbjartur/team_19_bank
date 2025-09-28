@@ -16,7 +16,7 @@ public class Account {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private User user;
+    private BankUser user;
 
     public Account() {
         this.balance = 0.0;
@@ -38,11 +38,11 @@ public class Account {
         this.accountNumber = accountNumber;
     }
 
-    public User getUser() {
+    public BankUser getUser() {
         return user;
     }
 
-    public void setUser(User user) {
+    public void setUser(BankUser user) {
         this.user = user;
     }
 
