@@ -17,18 +17,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
 
-        return httpSecurity.csrf(AbstractHttpConfigurer::disable).formLogin(httpForm -> {
-            httpForm
-                    .loginPage("/login")
-                    .permitAll();
-            httpForm
-                    .defaultSuccessUrl("/index");
-        }).authorizeHttpRequests(registry -> {
-            registry
-                    .requestMatchers("/req/**", "/css/**", "/js/**", "/images/**", "/webjars/**", "/h2-console/**", "req/signup/**", "/login/**", "/bank/**", "/accounts/**", "/users/**")
-                    .permitAll();
-            registry.anyRequest().authenticated();
-        }).build();
+        return httpSecurity.csrf(AbstractHttpConfigurer::disable)
+                .headers(headers -> headers.frameOptions().disable()).
+                formLogin(httpForm -> {
+                    httpForm
+                            .loginPage("/login")
+                            .permitAll();
+                    httpForm
+                            .defaultSuccessUrl("/index");
+                }).authorizeHttpRequests(registry -> {
+                    registry
+                            .requestMatchers("/req/**", "/css/**", "/js/**", "/images/**", "/webjars/**", "/h2-console/**", "req/signup/**", "/login/**", "/bank/**", "/accounts/**", "/users/**")
+                            .permitAll();
+                    registry.anyRequest().authenticated();
+                }).build();
     }
 }
 

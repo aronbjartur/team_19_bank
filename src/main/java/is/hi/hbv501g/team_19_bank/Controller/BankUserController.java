@@ -17,7 +17,7 @@ public class BankUserController {
         this.userService = userService;
     }
 
-    // Create new user
+    // Create new user (Virkar)
     @PostMapping
     public BankUser createUser(@RequestBody BankUser user) {
         return userService.createUser(user);
@@ -29,14 +29,14 @@ public class BankUserController {
         return userService.getAllUsers();
     }
 
-    // Get user by ID
+    // Get user by ID (Virkar)
     @GetMapping("/{id}")
     public BankUser getUser(@PathVariable Long id) {
         return userService.getUserById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    // Delete user by ID
+    // Delete user by ID (Virkar)
     @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);

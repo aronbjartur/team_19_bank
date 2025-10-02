@@ -39,6 +39,7 @@ public class UserService implements UserDetailsService {
         } else if (existingUser.isPresent()) {
             throw new IllegalArgumentException("Username already exists");
         }
+        System.out.println("Creating user: " + user.getUsername());
         return userRepository.save(user);
     }
 
