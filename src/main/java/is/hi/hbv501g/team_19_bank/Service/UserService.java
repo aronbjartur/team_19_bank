@@ -11,6 +11,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import org.springframework.security.crypto.password.PasswordEncoder; // -Ó
+
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +21,9 @@ import java.util.Optional;
 public class UserService implements UserDetailsService {
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder; // -Ó
 
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Optional<BankUser> user = userRepository.findByUsername(username);
@@ -39,6 +44,9 @@ public class UserService implements UserDetailsService {
         } else if (existingUser.isPresent()) {
             throw new IllegalArgumentException("Username already exists");
         }
+
+        user.setPassword(passwordEncoder.encode(user.getPassword())); // -Ó
+
         System.out.println("Creating user: " + user.getUsername());
         return userRepository.save(user);
     }
