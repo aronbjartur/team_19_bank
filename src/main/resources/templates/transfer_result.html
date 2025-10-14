@@ -2,7 +2,8 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
   <meta charset="UTF-8">
-  <title th:text="${transfer.status} == 'COMPLETED' ? 'Transfer Completed' : 'Transfer Failed'">Transfer Result</title>
+  <!-- Use a safe method to compare the status -->
+  <title th:text="${transfer.status.toString() == 'COMPLETED'} ? 'Transfer Completed' : 'Transfer Failed'">Transfer Result</title>
   <link rel="stylesheet" href="/css/main.css">
 </head>
 <body class="page page--transfer-result">
@@ -12,7 +13,9 @@
     <div class="nav__links">
       <a href="/" class="nav__link">Home</a>
       <a href="/transfer" class="nav__link nav__link--active">Transfer</a>
-      <a href="/logout" class="nav__link">Logout</a>
+      <form th:action="@{/logout}" method="post" style="display: inline-block;">
+        <button type="submit" class="nav__link nav__link--button">Logout</button>
+      </form>
     </div>
   </nav>
 </header>
@@ -20,18 +23,24 @@
 <main class="container">
   <section class="card">
     <h1 class="card__title"
-        th:text="${transfer.status} == 'COMPLETED' ? 'Transfer Completed' : 'Transfer Failed'">
+        th:text="${transfer.status.toString() == 'COMPLETED'} ? 'Transfer Completed' : 'Transfer Failed'">
       Transfer Result
     </h1>
 
     <div class="details">
       <p><strong>From:</strong> <span th:text="${transfer.sourceAccount}"></span></p>
       <p><strong>To:</strong> <span th:text="${transfer.destinationAccount}"></span></p>
-      <p><strong>Amount:</strong> <span th:text="${#numbers.formatDecimal(transfer.amount, 1, 'POINT', 2, 'ZERO_PAD')}"></span></p>
+
+      <!-- Using the safest formatDecimal pattern -->
+      <p><strong>Amount:</strong> kr <span th:text="${#numbers.formatDecimal(transfer.amount, 0, 'POINT', 2, 'POINT')}"></span></p>
+
       <p th:if="${transfer.memo}"><strong>Memo:</strong> <span th:text="${transfer.memo}"></span></p>
-      <p class="alert alert--error" th:if="${transfer.failureReason}">
+
+      <!-- Display the reason if the transfer failed -->
+      <p class="alert alert--error" th:if="${transfer.failureReason != null and transfer.failureReason != ''}">
         <strong>Reason:</strong> <span th:text="${transfer.failureReason}"></span>
       </p>
+
     </div>
 
     <div class="form__actions">
@@ -44,5 +53,3 @@
 <footer class="site-footer">
   <p>&copy; Team 19 Bank</p>
 </footer>
-</body>
-</html>

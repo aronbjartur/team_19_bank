@@ -1,15 +1,15 @@
 package is.hi.hbv501g.team_19_bank.Service;
 
-
+import is.hi.hbv501g.team_19_bank.model.Account;
 import is.hi.hbv501g.team_19_bank.model.BankUser;
 import is.hi.hbv501g.team_19_bank.repository.UserRepository;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.security.crypto.password.PasswordEncoder; // -Ó
 
@@ -19,36 +19,55 @@ import java.util.Optional;
 @Service
 @AllArgsConstructor
 public class UserService implements UserDetailsService {
-    @Autowired
+
     private UserRepository userRepository;
-
-    @Autowired
     private PasswordEncoder passwordEncoder; // -Ó
+    private final AccountService accountService;
 
+    @Transactional
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Optional<BankUser> user = userRepository.findByUsername(username);
         if (user.isPresent()) {
             var u = user.get();
-            return User.builder().username(u.getUsername()).password(u.getPassword()).build();
+            String accountNumber = u.getAccounts().isEmpty() ? "N/A" : u.getAccounts().get(0).getAccountNumber();
+
+            return User.builder()
+                    .username(u.getUsername())
+                    .password(u.getPassword())
+                    .roles("USER")
+                    .build();
         } else {
             throw new UsernameNotFoundException("User not found with username: " + username);
         }
     }
 
+    @Transactional
+    public Optional<BankUser> getUserByUsernameWithAccounts(String username) {
+        Optional<BankUser> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isPresent()) {
+            BankUser user = userOpt.get();
+            user.getAccounts().size();
+        }
+        return userOpt;
+    }
 
-    // Create a new user
+    @Transactional
     public BankUser createUser(BankUser user) {
         Optional<BankUser> existingUser = userRepository.findByUsername(user.getUsername());
+
         if (user.getCreditScore() < 0 || user.getCreditScore() > 850) {
             throw new IllegalArgumentException("Credit score must be non-negative and not exceed 850");
         } else if (existingUser.isPresent()) {
             throw new IllegalArgumentException("Username already exists");
         }
 
-        user.setPassword(passwordEncoder.encode(user.getPassword())); // -Ó
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        BankUser savedUser = userRepository.save(user);
+        Account newAccount = accountService.createDefaultAccountForUser(savedUser);
+        savedUser.getAccounts().add(newAccount);
 
-        System.out.println("Creating user: " + user.getUsername());
-        return userRepository.save(user);
+        System.out.println("Creating user: " + savedUser.getUsername() + " with account: " + newAccount.getAccountNumber());
+        return savedUser;
     }
 
     // Get all users
@@ -61,14 +80,23 @@ public class UserService implements UserDetailsService {
         return userRepository.findById(id);
     }
 
-    // Delete user by ID
+    @Transactional
+    public Account getUserAccount(Long id) {
+        BankUser user = getUserById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getAccounts().isEmpty()) {
+            throw new RuntimeException("User has no associated bank account.");
+        }
+
+        return user.getAccounts().get(0);
+    }
+
+    public Double getUserAccountBalance(Long id) {
+        return getUserAccount(id).getBalance();
+    }
+
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }
-
-    /*// Find user by username (custom query from repository)
-    public Optional<BankUser> getUserByUsername(String username) {
-        return Optional.ofNullable(userRepository.findByUsername(username));
-    }
-    */
 }

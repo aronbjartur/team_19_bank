@@ -8,14 +8,13 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder; // -Ó
-import org.springframework.security.crypto.password.PasswordEncoder; // -Ó
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder; // Ó
+import org.springframework.security.crypto.password.PasswordEncoder; // Ó
 
 @Configuration
 @AllArgsConstructor
 @EnableWebSecurity
 public class SecurityConfig {
-
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -27,17 +26,16 @@ public class SecurityConfig {
                             .loginPage("/login")
                             .permitAll();
                     httpForm
-                            .defaultSuccessUrl("/index");
+                            .defaultSuccessUrl("/");
                 }).authorizeHttpRequests(registry -> {
                     registry
-                            .requestMatchers("/req/**", "/css/**", "/js/**", "/images/**", "/webjars/**", "/h2-console/**", "/req/signup/**", "/login/**", "/bank/**", "/accounts/**", "/users/**")
-                            .permitAll();
+                            // tók út req -AB
+                            .requestMatchers("/", "/login", "/signup", "/css/**", "/js/**", "/images/**", "/webjars/**", "/h2-console/**", "/users").permitAll();
                     registry.anyRequest().authenticated();
                 }).build();
     }
-     @Bean
-        public PasswordEncoder passwordEncoder() {
-            return new BCryptPasswordEncoder();
-        } // -Ó
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    } // Ó
 }
-

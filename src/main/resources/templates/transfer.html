@@ -12,7 +12,9 @@
     <div class="nav__links">
       <a href="/" class="nav__link">Home</a>
       <a href="/transfer" class="nav__link nav__link--active">Transfer</a>
-      <a href="/logout" class="nav__link">Logout</a>
+      <form th:action="@{/logout}" method="post" style="display: inline-block;">
+        <button type="submit" class="nav__link nav__link--button">Logout</button>
+      </form>
     </div>
   </nav>
 </header>
@@ -21,28 +23,37 @@
   <section class="card card--form">
     <h1 class="card__title">Make a Transfer</h1>
 
-
-    <div th:if="${#fields.hasAnyErrors()}" class="alert alert--error">
-      <ul class="list list--errors">
-        <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
-      </ul>
-    </div>
-
     <form th:action="@{/transfer}" th:object="${transferRequest}" method="post" class="form form--transfer">
+
+      <!-- Display general form errors -->
+      <div th:if="${#fields.hasAnyErrors()}" class="alert alert--error">
+        <ul class="list list--errors">
+          <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
+        </ul>
+      </div>
+
+      <!-- FROM ACCOUNT (Source) - Editable for testing Anchor Account 100200300 -->
       <div class="form__row">
-        <label class="form__label">From account</label>
-        <input class="form__input" th:field="*{sourceAccount}" placeholder="e.g. 100200300" required>
+        <label class="form__label">From Account (e.g. 100200300)</label>
+        <input class="form__input" th:field="*{sourceAccount}" placeholder="Enter Source Account" required>
         <small class="form__hint" th:if="${#fields.hasErrors('sourceAccount')}" th:errors="*{sourceAccount}"></small>
       </div>
 
+      <!-- TO ACCOUNT (Destination) - Now editable, defaults to user's account -->
       <div class="form__row">
-        <label class="form__label">To account</label>
-        <input class="form__input" th:field="*{destinationAccount}" placeholder="e.g. 400500600" required>
+        <label class="form__label">To Account (Your Account)</label>
+        <!-- REMOVED 'disabled' attribute. Uses th:value for default display. -->
+        <input class="form__input"
+               th:field="*{destinationAccount}"
+               th:value="${userAccountNumber}"
+               required>
         <small class="form__hint" th:if="${#fields.hasErrors('destinationAccount')}" th:errors="*{destinationAccount}"></small>
       </div>
 
+      <!-- HIDDEN INPUT IS REMOVED -->
+
       <div class="form__row">
-        <label class="form__label">Amount</label>
+        <label class="form__label">Amount (kr)</label>
         <input class="form__input" th:field="*{amount}" type="number" step="0.01" min="0.01" placeholder="0.00" required>
         <small class="form__hint" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}"></small>
       </div>

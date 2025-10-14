@@ -1,56 +1,36 @@
 package is.hi.hbv501g.team_19_bank.Service;
 
-import is.hi.hbv501g.team_19_bank.ExceptionHandling.UserNotFoundException;
 import is.hi.hbv501g.team_19_bank.model.Account;
+import is.hi.hbv501g.team_19_bank.model.BankUser;
 import is.hi.hbv501g.team_19_bank.repository.AccountRepository;
-import is.hi.hbv501g.team_19_bank.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.UUID; // Notar UUID til að búa til reikningsnúmer
 
 @Service
+@AllArgsConstructor
 public class AccountService {
 
     private final AccountRepository accountRepository;
-    @Autowired
-    private UserRepository userRepository;
 
-    // Constructor Injection (best practice)
-    public AccountService(AccountRepository accountRepository, UserRepository userRepository) {
-        this.accountRepository = accountRepository;
-        this.userRepository = userRepository;
+    // Býr til nýjan reikning fyrir notanda
+    public Account createDefaultAccountForUser(BankUser user) {
+        Account newAccount = new Account();
+
+        // byrjar a 0 kr
+        newAccount.setBalance(0.0);
+        newAccount.setUser(user); // Tengir reikninginn við notandann
+
+        // Býr til sérstakt reikningsnúmer
+        String accountNumber = generateUniqueAccountNumber();
+        newAccount.setAccountNumber(accountNumber);
+
+        return accountRepository.save(newAccount); // Vistar og gefur reikning
     }
 
-    // Create a new account
-    public Account createAccount(Account account) {
-        // Check if the user exists in the users table
-        if (account.getUser() == null || !userRepository.existsById(account.getUser().getId())) {
-            throw new UserNotFoundException("User not found with ID: " + (account.getUser() != null ? account.getUser().getId() : "null"));
-        }
-        return accountRepository.save(account);
+    // Býr til einfalt, sérstakt reikningsnúmer
+    private String generateUniqueAccountNumber() {
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
     }
-
-    // Get all accounts
-    public List<Account> getAllAccounts() {
-        return accountRepository.findAll();
-    }
-
-    // Get account by ID
-    public Optional<Account> getAccountById(Long id) {
-        return accountRepository.findById(id);
-    }
-
-    // Delete account by ID
-    public void deleteAccount(Long id) {
-        accountRepository.deleteById(id);
-    }
-
-    /**
-     // Find account by username (custom query from repository)
-     public Optional<Account> getAccountByUsername(String username) {
-     return Optional.ofNullable(accountRepository.findByUsername(username));
-     }
-     **/
 }
