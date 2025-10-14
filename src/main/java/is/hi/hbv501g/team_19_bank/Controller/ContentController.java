@@ -3,6 +3,7 @@ package is.hi.hbv501g.team_19_bank.Controller;
 import is.hi.hbv501g.team_19_bank.Service.UserService;
 import is.hi.hbv501g.team_19_bank.model.BankUser;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -19,15 +20,30 @@ public class ContentController {
         this.userService = userService;
     }
 
-    // Fer bara á index ef það auth, annars ertu reddirectaður á login
-    @GetMapping("/")
-    public String index(Model model, Authentication authentication) {
+    // Fer bara á index ef það auth, annars ertu reddirectaður á login    @GetMapping("/")
+    public String index(Model model) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
         if (authentication == null || "anonymousUser".equals(authentication.getName())) {
             return "redirect:/login";
         }
 
+        String username = authentication.getName();
 
-        model.addAttribute("username", authentication.getName());
+        BankUser user = userService.getUserByUsernameWithAccounts(username)
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found in database."));
+
+        // Bæta gögnum við Model-ið
+        model.addAttribute("username", user.getUsername());
+
+        // Vegna þess að við neyðum bara einn reikning, getum við sótt hann beint
+        double balance = user.getAccounts().get(0).getBalance();
+        String accountNumber = user.getAccounts().get(0).getAccountNumber();
+
+        model.addAttribute("balance", String.format("%.2f", balance)); // Sýnir 0.00 í stað 0.0, breyttum þessu seinna í heilartölur
+        model.addAttribute("accountNumber", accountNumber);
+        model.addAttribute("creditScore", user.getCreditScore());
+
         return "index";
     }
 
@@ -36,14 +52,12 @@ public class ContentController {
         return "login";
     }
 
-    // signup
     @GetMapping("/signup")
     public String signup(Model model) {
         model.addAttribute("bankUser", new BankUser());
         return "signup";
     }
 
-    // höndlar form submission
     @PostMapping("/signup")
     public String registerUser(@ModelAttribute("bankUser") BankUser user, BindingResult result) {
         if (result.hasErrors()) {
@@ -57,7 +71,6 @@ public class ContentController {
             return "signup";
         }
 
-        // til login ef signup gekk
         return "redirect:/login";
     }
 }

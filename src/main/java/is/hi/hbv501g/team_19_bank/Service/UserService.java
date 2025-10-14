@@ -29,20 +29,28 @@ public class UserService implements UserDetailsService {
         Optional<BankUser> user = userRepository.findByUsername(username);
         if (user.isPresent()) {
             var u = user.get();
-
             String accountNumber = u.getAccounts().isEmpty() ? "N/A" : u.getAccounts().get(0).getAccountNumber();
 
             return User.builder()
                     .username(u.getUsername())
                     .password(u.getPassword())
-                    .roles("USER") // Example role
+                    .roles("USER")
                     .build();
         } else {
             throw new UsernameNotFoundException("User not found with username: " + username);
         }
     }
 
-    // Create a new user AND their single bank account
+    @Transactional
+    public Optional<BankUser> getUserByUsernameWithAccounts(String username) {
+        Optional<BankUser> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isPresent()) {
+            BankUser user = userOpt.get();
+            user.getAccounts().size();
+        }
+        return userOpt;
+    }
+
     @Transactional
     public BankUser createUser(BankUser user) {
         Optional<BankUser> existingUser = userRepository.findByUsername(user.getUsername());
@@ -53,15 +61,9 @@ public class UserService implements UserDetailsService {
             throw new IllegalArgumentException("Username already exists");
         }
 
-        // password encrypt
-        user.setPassword(passwordEncoder.encode(user.getPassword())); // -Ó
-
-        // save the user, svo gerir Id
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         BankUser savedUser = userRepository.save(user);
-
-        // mandatory single account a user
         Account newAccount = accountService.createDefaultAccountForUser(savedUser);
-
         savedUser.getAccounts().add(newAccount);
 
         System.out.println("Creating user: " + savedUser.getUsername() + " with account: " + newAccount.getAccountNumber());
@@ -78,7 +80,6 @@ public class UserService implements UserDetailsService {
         return userRepository.findById(id);
     }
 
-
     @Transactional
     public Account getUserAccount(Long id) {
         BankUser user = getUserById(id)
@@ -88,16 +89,13 @@ public class UserService implements UserDetailsService {
             throw new RuntimeException("User has no associated bank account.");
         }
 
-        // alltaf bara reikningur numer 0
         return user.getAccounts().get(0);
     }
 
-    // balance
     public Double getUserAccountBalance(Long id) {
         return getUserAccount(id).getBalance();
     }
 
-    // Delete user by ID
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }
