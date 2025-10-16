@@ -2,7 +2,7 @@ package is.hi.hbv501g.team_19_bank.Service;
 // þannig að 100200300 hefur milljón alltaf, alltaf hægt að taka pening þaðan
 
 import is.hi.hbv501g.team_19_bank.model.Account;
-import is.hi.hbv501g.team_19_bank.repository.AccountRepository; // Assuming this path
+import is.hi.hbv501g.team_19_bank.repository.AccountRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 

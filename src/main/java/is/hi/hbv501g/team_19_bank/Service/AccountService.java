@@ -6,13 +6,14 @@ import is.hi.hbv501g.team_19_bank.repository.AccountRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID; // Notar UUID til að búa til reikningsnúmer
+import java.util.UUID;
 
 @Service
 @AllArgsConstructor
 public class AccountService {
 
     private final AccountRepository accountRepository;
+
 
     // Býr til nýjan reikning fyrir notanda
     public Account createDefaultAccountForUser(BankUser user) {

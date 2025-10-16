@@ -138,3 +138,20 @@ button:hover {
 .shake {
   animation: shake 0.5s;
 }
+/* Add this to the end of your existing CSS file (style.css) */
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20%, 60% {
+    transform: translateX(-5px);
+  }
+  40%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+.shake {
+  animation: shake 0.5s;
+}

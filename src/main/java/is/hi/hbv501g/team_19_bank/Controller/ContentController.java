@@ -1,5 +1,6 @@
 package is.hi.hbv501g.team_19_bank.Controller;
 
+import is.hi.hbv501g.team_19_bank.Service.AccountService;
 import is.hi.hbv501g.team_19_bank.Service.UserService;
 import is.hi.hbv501g.team_19_bank.model.BankUser;
 import org.springframework.security.core.Authentication;
@@ -15,12 +16,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 public class ContentController {
 
     private final UserService userService;
+    private final AccountService accountService;
 
-    public ContentController(UserService userService) {
+    public ContentController(UserService userService, AccountService accountService) {
         this.userService = userService;
+        this.accountService = accountService;
     }
 
-    // Fer bara á index ef það auth, annars ertu reddirectaður á login    @GetMapping("/")
+    // Fer bara á index ef það auth, annars ertu reddirectaður á login
+    @GetMapping("/")
     public String index(Model model) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 

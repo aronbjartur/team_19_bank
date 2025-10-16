@@ -5,9 +5,9 @@ import is.hi.hbv501g.team_19_bank.model.Transfer;
 import is.hi.hbv501g.team_19_bank.model.TransferRequest;
 import is.hi.hbv501g.team_19_bank.repository.AccountRepository;
 import is.hi.hbv501g.team_19_bank.repository.TransferRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import lombok.extern.slf4j.Slf4j; // þarf að hafa lombok downloadað
 
 import java.util.Optional;
 
@@ -18,7 +18,7 @@ public class TransferService {
     private final AccountRepository accounts;
     private final TransferRepository transfers;
 
-    public TransferService(AccountRepository accounts, TransferRepository transfers){
+    public TransferService(AccountRepository accounts, TransferRepository transfers) {
         this.accounts = accounts;
         this.transfers = transfers;
     }
@@ -51,11 +51,33 @@ public class TransferService {
         Account from = accounts.findByAccountNumber(req.getSourceAccount()).orElse(null);
         Account to = accounts.findByAccountNumber(req.getDestinationAccount()).orElse(null);
 
-        if(from == null || to == null) {
+        if (from == null || to == null) {
             return fail(req, "One or both account numbers are invalid or non-existent.");
         }
 
-        if(from.getBalance() < req.getAmount()){
+        if (from.getBalance() < req.getAmount()) {
+            return fail(req, "Insufficient funds in the source account.");
+        }
+        // Determine maximum withdrawal amount based on credit score
+        int creditScore = to.getUser().getCreditScore();
+        System.out.println("Credit Score: " + creditScore);
+        double maxWithdrawalLimit;
+
+        if (creditScore >= 1 && creditScore <= 350) {
+            maxWithdrawalLimit = 100000;
+        } else if (creditScore >= 351 && creditScore <= 700) {
+            maxWithdrawalLimit = 250000;
+        } else if (creditScore >= 701 && creditScore <= 850) {
+            maxWithdrawalLimit = 500000;
+        } else {
+            return fail(req, "Invalid credit score.");
+        }
+        // Check if the requested amount exceeds the maximum withdrawal limit
+        if (req.getAmount() > maxWithdrawalLimit) {
+            return fail(req, "Requested amount exceeds the maximum withdrawal limit of " + maxWithdrawalLimit + " kr for your credit score ( " + creditScore + " ).");
+        }
+
+        if (from.getBalance() < req.getAmount()) {
             return fail(req, "Insufficient funds in the source account.");
         }
 
@@ -77,7 +99,7 @@ public class TransferService {
         return transfers.save(t);
     }
 
-    private Transfer fail(TransferRequest req, String reason){
+    private Transfer fail(TransferRequest req, String reason) {
         Transfer t = new Transfer();
         t.setSourceAccount(req.getSourceAccount());
         t.setDestinationAccount(req.getDestinationAccount());
