@@ -8,10 +8,9 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import org.springframework.security.crypto.password.PasswordEncoder; // -Ó
 
 import java.util.List;
 import java.util.Optional;
@@ -78,6 +77,11 @@ public class UserService implements UserDetailsService {
     // Get user by ID
     public Optional<BankUser> getUserById(Long id) {
         return userRepository.findById(id);
+    }
+
+    // Get user by name
+    public Optional<BankUser> getUserByName(String name) {
+        return userRepository.findByUsername(name);
     }
 
     @Transactional

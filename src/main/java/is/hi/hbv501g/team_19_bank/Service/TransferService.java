@@ -58,24 +58,6 @@ public class TransferService {
         if (from.getBalance() < req.getAmount()) {
             return fail(req, "Insufficient funds in the source account.");
         }
-        // Determine maximum withdrawal amount based on credit score
-        int creditScore = to.getUser().getCreditScore();
-        System.out.println("Credit Score: " + creditScore);
-        double maxWithdrawalLimit;
-
-        if (creditScore >= 1 && creditScore <= 350) {
-            maxWithdrawalLimit = 100000;
-        } else if (creditScore >= 351 && creditScore <= 700) {
-            maxWithdrawalLimit = 250000;
-        } else if (creditScore >= 701 && creditScore <= 850) {
-            maxWithdrawalLimit = 500000;
-        } else {
-            return fail(req, "Invalid credit score.");
-        }
-        // Check if the requested amount exceeds the maximum withdrawal limit
-        if (req.getAmount() > maxWithdrawalLimit) {
-            return fail(req, "Requested amount exceeds the maximum withdrawal limit of " + maxWithdrawalLimit + " kr for your credit score ( " + creditScore + " ).");
-        }
 
         if (from.getBalance() < req.getAmount()) {
             return fail(req, "Insufficient funds in the source account.");

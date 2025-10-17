@@ -30,6 +30,7 @@ public class AccountService {
         return accountRepository.save(newAccount); // Vistar og gefur reikning
     }
 
+    
     // Býr til einfalt, sérstakt reikningsnúmer
     private String generateUniqueAccountNumber() {
         return UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
