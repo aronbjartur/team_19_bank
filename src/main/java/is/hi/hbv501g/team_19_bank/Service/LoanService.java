@@ -97,7 +97,7 @@ public class LoanService {
         return loanRepository.save(l);
     }
 
-    private Loan pay(Loan loan, Account payerAccount) {
+    public Loan pay(Loan loan, Account payerAccount) {
         // Check if the payer has enough balance to pay the loan
         if (payerAccount.getBalance() < loan.getLoanAmount()) {
             log.warn("Insufficient funds in account {} to pay loan ID {}", payerAccount.getAccountNumber(), loan.getLoanId());

@@ -6,6 +6,7 @@ import is.hi.hbv501g.team_19_bank.repository.AccountRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -30,9 +31,13 @@ public class AccountService {
         return accountRepository.save(newAccount); // Vistar og gefur reikning
     }
 
-    
+
     // Býr til einfalt, sérstakt reikningsnúmer
     private String generateUniqueAccountNumber() {
         return UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
+    }
+
+    public Optional<Account> getAccountByAccountNumber(String accountNumber) {
+        return accountRepository.findByAccountNumber(accountNumber);
     }
 }
