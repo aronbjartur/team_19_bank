@@ -29,7 +29,7 @@ public class SecurityConfig {
                 }).authorizeHttpRequests(registry -> {
                     registry
                             // tók út req -AB
-                            .requestMatchers("/", "/login", "/signup", "/css/**", "/js/**", "/images/**", "/webjars/**", "/h2-console/**", "/users").permitAll();
+                            .requestMatchers("/", "/login", "/signup", "/css/**", "/js/**", "/images/**", "/webjars/**", "/h2-console/**", "/users*", "/transfers*", "/loans").permitAll();
                     registry.anyRequest().authenticated();
                 }).build();
     }

@@ -3,13 +3,10 @@ package is.hi.hbv501g.team_19_bank.Controller;
 import is.hi.hbv501g.team_19_bank.Service.AccountService;
 import is.hi.hbv501g.team_19_bank.Service.LoanService;
 import is.hi.hbv501g.team_19_bank.Service.UserService;
-import is.hi.hbv501g.team_19_bank.model.Account;
 import is.hi.hbv501g.team_19_bank.model.Loan;
-import is.hi.hbv501g.team_19_bank.model.LoanPaymentRequest;
 import is.hi.hbv501g.team_19_bank.model.LoanRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -17,10 +14,9 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Optional;
 
-@Controller
+@Controller // Kannski breyta þessu í @Controller ef við viljum skila HTML síðum
 @RequestMapping("/loans")
 public class LoanController {
     private final LoanService loanService;
@@ -34,10 +30,11 @@ public class LoanController {
         this.accountService = accountService;
     }
 
-    // Get all loans
-    @GetMapping
-    public List<Loan> getAllLoans() {
-        return loanService.getAllLoans();
+
+    @GetMapping("/user-loans")
+    public Optional<Loan> getUserLoans(Authentication authentication) {
+        String username = authentication.getName();
+        return loanService.getLoansByAuthenticatedUser(username);
     }
 
     // Get a loan by ID
@@ -101,28 +98,27 @@ public class LoanController {
                 .orElse(submittedLoan); // Fallback ef það finnst ekki.
 
         model.addAttribute("loan", confirmedLoan);
-        return "transfer_result";
+        return "loan_result";
     }
+/**
+ @PutMapping("/pay") public ResponseEntity<Loan> payLoan(@ModelAttribute("loanPaymentRequest") @Valid LoanPaymentRequest request,
+ BindingResult binding,
+ Model model) {
+ Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+ String username = auth.getName();
+ // Fetch the loan by ID
+ Loan loan = loanService.getLoanById(request.getLoanId())
+ .orElseThrow(() -> new RuntimeException("Loan not found with ID: " + request.getLoanId()));
+ Long userId = userService.getUserByUsernameWithAccounts(username)
+ .orElseThrow(() -> new RuntimeException("User not found")).getId();
+ String userAccountNumber = userService.getUserAccount(userId).getAccountNumber();
+ // Fetch the payer's account by account number
+ Account payerAccount = accountService.getAccountByAccountNumber(userAccountNumber)
+ .orElseThrow(() -> new RuntimeException("Account not found with account number: " + userAccountNumber));
 
-    @PutMapping("/pay")
-    public ResponseEntity<Loan> payLoan(@ModelAttribute("loanRequest") @Valid LoanPaymentRequest request,
-                                        BindingResult binding,
-                                        Model model) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        // Fetch the loan by ID
-        Loan loan = loanService.getLoanById(request.getLoanId())
-                .orElseThrow(() -> new RuntimeException("Loan not found with ID: " + request.getLoanId()));
-        Long userId = userService.getUserByUsernameWithAccounts(username)
-                .orElseThrow(() -> new RuntimeException("User not found")).getId();
-        String userAccountNumber = userService.getUserAccount(userId).getAccountNumber();
-        // Fetch the payer's account by account number
-        Account payerAccount = accountService.getAccountByAccountNumber(userAccountNumber)
-                .orElseThrow(() -> new RuntimeException("Account not found with account number: " + userAccountNumber));
+ // Call the pay method in LoanService
+ Loan updatedLoan = loanService.pay(loan, payerAccount);
 
-        // Call the pay method in LoanService
-        Loan updatedLoan = loanService.pay(loan, payerAccount);
-
-        return ResponseEntity.ok(updatedLoan);
-    }
+ return ResponseEntity.ok(updatedLoan);
+ }**/
 }

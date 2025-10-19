@@ -13,31 +13,39 @@ public class Loan {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long loanId;
+
     @Column(nullable = false)
     private Double loanAmount;
+    // Gæti þurft að breyta þessu
     @Column(nullable = false)
     private LocalDate startDate;
+
     @Column(nullable = false)
     private Double interestRate;
+
     @Column(nullable = false)
     private String loanGiverAccount;
+
     @Column(nullable = false)
     private String loanReceiverAccount;
+    // Gæti þurft að eyða þessu
     @Column(nullable = false)
     private String authenticatedUser;
+
     private String memo;
 
-    @Enumerated(EnumType.STRING)
+
     @Column(nullable = false)
-    private LoanStatus status = LoanStatus.APPROVED;
+    @Enumerated(EnumType.STRING)
+    private LoanStatus status = LoanStatus.PENDING;
 
     private String failureReason = "";
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
-    public void setUser(BankUser authenticatedUser) {
-        this.authenticatedUser = authenticatedUser.getUsername();
+    public void setUser(String authenticatedUser) {
+        this.authenticatedUser = authenticatedUser;
     }
 
     public enum LoanStatus {

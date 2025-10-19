@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface LoanRepository extends JpaRepository<Loan, Long> {
-    Optional<Loan> findByUserId(Long userId);
 
-    Optional<Loan> findByLoanStatus(Loan.LoanStatus status);
+    Optional<Loan> findByAuthenticatedUser(String authenticatedUser);
 }
