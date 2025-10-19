@@ -11,6 +11,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 public class ContentController {
@@ -25,7 +26,7 @@ public class ContentController {
 
     // Fer bara á index ef það auth, annars ertu reddirectaður á login
     @GetMapping("/")
-    public String index(Model model) {
+    public String index(Model model, @RequestParam(value = "deleteError", required = false) Boolean deleteError) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || "anonymousUser".equals(authentication.getName())) {
@@ -44,12 +45,39 @@ public class ContentController {
         double balance = user.getAccounts().get(0).getBalance();
         String accountNumber = user.getAccounts().get(0).getAccountNumber();
 
-        model.addAttribute("balance", String.format("%.2f", balance)); // Sýnir 0.00 í stað 0.0, breyttum þessu seinna í heilartölur
+        model.addAttribute("balance", String.format("%.2f", balance));
         model.addAttribute("accountNumber", accountNumber);
         model.addAttribute("creditScore", user.getCreditScore());
 
+        // Bæta við flaggi fyrir eyðingu: true ef balance er 0, annars false
+        // Athuga hvort balance sé 0.0 eða minna (til að taka á minniháttar aukastafa villum)
+        model.addAttribute("canDelete", (balance <= 0.0));
+
+        // Sýna villu ef notandi reyndi að eyða reikningi með peningum
+        if (deleteError != null && deleteError) {
+            model.addAttribute("deleteError", true);
+        }
+
         return "index";
     }
+
+    // NÝTT: Endpoint til að eyða notandareikningi
+    @PostMapping("/delete-account")
+    public String deleteAccount() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        boolean deleted = userService.deleteUserByUsername(username);
+
+        if (deleted) {
+            // Eyðing tókst - Vísar á útskráningu, sem vísar á login
+            return "redirect:/logout";
+        } else {
+            // Eyðing mistókst (balance ekki 0). Redirecta á heimasíðu til að sýna villu.
+            return "redirect:/?deleteError=true";
+        }
+    }
+
 
     @GetMapping("/login")
     public String login() {

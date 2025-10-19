@@ -28,7 +28,7 @@ public class UserService implements UserDetailsService {
         Optional<BankUser> user = userRepository.findByUsername(username);
         if (user.isPresent()) {
             var u = user.get();
-            String accountNumber = u.getAccounts().isEmpty() ? "N/A" : u.getAccounts().get(0).getAccountNumber();
+            // String accountNumber = u.getAccounts().isEmpty() ? "N/A" : u.getAccounts().get(0).getAccountNumber(); // This line is not needed here
 
             return User.builder()
                     .username(u.getUsername())
@@ -45,6 +45,7 @@ public class UserService implements UserDetailsService {
         Optional<BankUser> userOpt = userRepository.findByUsername(username);
         if (userOpt.isPresent()) {
             BankUser user = userOpt.get();
+            // Þessi lína neyðir seinnilegan reikninga-listann til að hlaðast
             user.getAccounts().size();
         }
         return userOpt;
@@ -67,6 +68,30 @@ public class UserService implements UserDetailsService {
 
         System.out.println("Creating user: " + savedUser.getUsername() + " with account: " + newAccount.getAccountNumber());
         return savedUser;
+    }
+
+    // NÝTT: Skilar true ef eytt, false ef balance er ekki 0
+    @Transactional
+    public boolean deleteUserByUsername(String username) {
+        Optional<BankUser> userOpt = getUserByUsernameWithAccounts(username);
+
+        if (userOpt.isEmpty()) {
+            // Notandi fannst ekki (tæknilega séð eytt)
+            return true;
+        }
+
+        BankUser user = userOpt.get();
+
+        // Athuga hvort allir reikningar séu 0 (Við vitum að það er bara einn)
+        // **Mikilvægt:** TotalBalance þarf að vera nákvæmlega 0.0 til að eyða.
+        if (user.getTotalBalance() > 0.0) {
+            // Reikningurinn er ekki tómur - Ekki eyða
+            return false;
+        }
+
+        // Eyða notanda (CascadeType.ALL sér um að eyða reikningnum)
+        userRepository.delete(user);
+        return true;
     }
 
     // Get all users

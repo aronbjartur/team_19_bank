@@ -12,17 +12,20 @@
         h2 { border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-top: 20px; }
         .balance { font-size: 2.5em; color: #4CAF50; font-weight: bold; }
         .transfer-link { display: inline-block; margin-top: 15px; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; }
-
-
-
-
-
+        /* NÝTT: Stíll fyrir Delete hnapp */
+        .delete-link { background-color: #dc3545; }
+        .message-box { padding: 10px; border-radius: 5px; margin-bottom: 15px; font-weight: bold; }
+        .message-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
     </style>
 </head>
 <body>
 
 <header>
-    <!-- Reverted to English label -->
+    <!-- Display Error Message if deletion failed due to non-zero balance -->
+    <div th:if="${deleteError}" class="message-box message-error">
+        Account deletion failed: **Balance must be 0.00 kr. or less** to close the account.
+    </div>
+
     <h1 th:text="'Welcome, ' + ${username} + '!'">Welcome, [Username]!</h1>
     <p>Unique Account Number: <strong th:text="${accountNumber}">[Account Number]</strong></p>
 </header>
@@ -30,7 +33,6 @@
 <main>
     <div class="dashboard-card">
         <h2>Current Balance</h2>
-        <!-- Changed currency symbol to kr -->
         <div class="balance" th:text="'kr ' + ${balance}">kr 0.00</div>
     </div>
 
@@ -42,11 +44,22 @@
 
     <div class="dashboard-card">
         <h2>Actions</h2>
-        <!-- Reverted to English label -->
-        <a href="/transfer" class="transfer-link">Transfer Funds</a>
-        <a href="/loans" class="loan-link">Loans</a>
 
-        <!-- Reverted to English label -->
+        <a href="/transfer" class="transfer-link">Transfer Funds</a>
+        <a href="/loans" class="transfer-link">Loans</a>
+
+        <!-- DELETE ACCOUNT BUTTON -->
+        <form th:action="@{/delete-account}" method="post" style="display: inline-block; margin-left: 20px;">
+            <button type="submit"
+                    class="transfer-link delete-link"
+                    style="border: none;"
+                    th:disabled="${!canDelete}"
+                    onclick="return confirm('Are you sure you want to delete your account? This action is permanent.');">
+                Delete Account
+            </button>
+        </form>
+
+        <!-- Sign Out Button -->
         <form th:action="@{/logout}" method="post" style="display: inline-block; margin-left: 20px;">
             <button type="submit" class="transfer-link" style="background-color: #dc3545; border: none;">Sign Out
             </button>
