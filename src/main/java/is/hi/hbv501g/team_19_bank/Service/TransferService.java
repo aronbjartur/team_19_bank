@@ -59,10 +59,6 @@ public class TransferService {
             return fail(req, "Insufficient funds in the source account.");
         }
 
-        if (from.getBalance() < req.getAmount()) {
-            return fail(req, "Insufficient funds in the source account.");
-        }
-
         from.setBalance(from.getBalance() - req.getAmount());
         to.setBalance(to.getBalance() + req.getAmount());
 

@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,8 +28,10 @@ public class LoanService {
         this.accountRepository = accountRepository;
     }
 
+    @Transactional
     public Loan loan(LoanRequest loanRequest) {
         // Get the currently authenticated user
+        // Gæti þurft að eyða þessu
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         BankUser authenticatedUser = userService.getUserByName(username).orElseThrow(() -> new RuntimeException("User not found with username: " + username));
@@ -63,6 +66,13 @@ public class LoanService {
         if (loanRequest.getAmount() > maxWithdrawalLimit) {
             return reject(loanRequest, "Requested loan amount exceeds the maximum withdrawal limit of " + maxWithdrawalLimit + " kr for your credit score ( " + creditScore + " ).");
         }
+        if (lender == null || receiver == null) {
+            return reject(loanRequest, "One or both account numbers are invalid or non-existent.");
+        }
+
+        if (lender.getBalance() < loanRequest.getAmount()) {
+            return reject(loanRequest, "Insufficient funds in bank account.");
+        }
 
         lender.setBalance(lender.getBalance() - loanRequest.getAmount());
         receiver.setBalance(receiver.getBalance() + loanRequest.getAmount());
@@ -71,8 +81,11 @@ public class LoanService {
         accountRepository.save(receiver);
         // Create a new Loan object
         Loan loan = new Loan();
-        loan.setUser(authenticatedUser);
+        loan.setUser(authenticatedUser.getUsername());
         loan.setLoanAmount(loanRequest.getAmount());
+        loan.setLoanGiverAccount(loanRequest.getLoanGiverAccount());
+        loan.setLoanReceiverAccount(loanRequest.getLoanReceiverAccount());
+        loan.setMemo(loanRequest.getMemo());
         loan.setStatus(Loan.LoanStatus.PENDING);
 
 
@@ -93,10 +106,11 @@ public class LoanService {
         l.setStatus(Loan.LoanStatus.REJECTED);
         l.setFailureReason(reason);
 
-        log.warn("Transfer failed: {}", reason);
+        log.warn("Loan request was rejected: {}", reason);
         return loanRepository.save(l);
     }
 
+    // Gæti þurft að tékka á þessu
     public Loan pay(Loan loan, Account payerAccount) {
         // Check if the payer has enough balance to pay the loan
         if (payerAccount.getBalance() < loan.getLoanAmount()) {
@@ -141,5 +155,9 @@ public class LoanService {
         } else {
             log.warn("Loan with ID {} does not exist.", id);
         }
+    }
+
+    public Optional<Loan> getLoansByAuthenticatedUser(String authenticatedUser) {
+        return loanRepository.findByAuthenticatedUser(authenticatedUser);
     }
 }

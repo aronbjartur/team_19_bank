@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Loan</title>
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body class="page page--transfer">
+<header class="site-header">
+    <nav class="nav">
+        <a href="/" class="nav__brand">Team 19 Bank</a>
+        <div class="nav__links">
+            <a href="/" class="nav__link">Home</a>
+            <a href="/loan" class="nav__link nav__link--active">Loan</a>
+            <form th:action="@{/logout}" method="post" style="display: inline-block;">
+                <button type="submit" class="nav__link nav__link--button">Logout</button>
+            </form>
+        </div>
+    </nav>
+</header>
+
+<main class="container">
+    <section class="card card--form">
+        <h1 class="card__title">Request a Loan</h1>
+
+        <form th:action="@{/loanRequest}" th:object="${loanRequest}" method="post" class="form form--loan">
+
+            <!-- Display general form errors -->
+            <div th:if="${#fields.hasAnyErrors()}" class="alert alert--error">
+                <ul class="list list--errors">
+                    <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
+                </ul>
+            </div>
+
+            <!-- TO ACCOUNT (Destination) - Now editable, defaults to user's account -->
+            <div class="form__row">
+                <label class="form__label">To Account (Your Account)</label>
+                <!-- REMOVED 'disabled' attribute. Uses th:value for default display. -->
+                <input class="form__input"
+                       th:field="*{loanReceiverAccount}"
+                       th:value="${userAccountNumber}"
+                       required>
+                <small class="form__hint" th:if="${#fields.hasErrors('loanReceiverAccount')}"
+                       th:errors="*{loanReceiverAccount}"></small>
+            </div>
+
+            <!-- HIDDEN INPUT IS REMOVED -->
+
+            <div class="form__row">
+                <label class="form__label">Amount (kr)</label>
+                <input class="form__input" th:field="*{amount}" type="number" step="0.01" min="0.01" placeholder="0.00"
+                       required>
+                <small class="form__hint" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}"></small>
+            </div>
+
+            <div class="form__row">
+                <label class="form__label">Memo (optional)</label>
+                <input class="form__input" th:field="*{memo}" maxlength="140" placeholder="Note for your records">
+            </div>
+
+            <div class="form__actions">
+                <button class="btn btn--primary" type="submit">Request Loan</button>
+                <a class="btn btn--ghost" href="/">Cancel</a>
+            </div>
+        </form>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <p>&copy; Team 19 Bank</p>
+</footer>
+</body>
+</html>

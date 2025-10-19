@@ -20,7 +20,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         final String TEST_ACCOUNT_NUMBER = "100200300";
-        final double STARTING_BALANCE = 1000000.00;
+        final double STARTING_BALANCE = 1000000000000.00;
 
         Optional<Account> existingAccount = accountRepository.findByAccountNumber(TEST_ACCOUNT_NUMBER);
 
