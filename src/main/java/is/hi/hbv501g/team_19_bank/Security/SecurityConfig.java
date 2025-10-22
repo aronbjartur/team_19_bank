@@ -16,6 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
+    private final TokenBlacklist tokenBlacklist = new TokenBlacklist();
 
     public SecurityConfig(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
@@ -29,7 +30,7 @@ public class SecurityConfig {
                 .requestMatchers("/login", "/signup", "/h2-console/**").permitAll()
                 .anyRequest().authenticated()
                 .and()
-                .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, tokenBlacklist), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -14,9 +14,11 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final TokenBlacklist tokenBlacklist;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, TokenBlacklist tokenBlacklist) {
         this.jwtUtil = jwtUtil;
+        this.tokenBlacklist = tokenBlacklist;
     }
 
     @Override
@@ -35,6 +37,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             String token = authorizationHeader.substring(7);
             System.out.println("Extracted Token: " + token);
+
+            if (tokenBlacklist.isTokenBlacklisted(token)) {
+                System.out.println("Token is blacklisted: " + token);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Token is invalidated. Please log in again.");
+                return;
+            }
+
             String username = jwtUtil.validateTokenAndGetUsername(token);
             System.out.println("Extracted Username: " + username);
 

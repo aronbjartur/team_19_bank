@@ -1,9 +1,11 @@
 package is.hi.hbv501g.team_19_bank.Controller;
 
+import is.hi.hbv501g.team_19_bank.Security.TokenBlacklist;
 import is.hi.hbv501g.team_19_bank.Service.AccountService;
 import is.hi.hbv501g.team_19_bank.Service.UserService;
 import is.hi.hbv501g.team_19_bank.model.BankUser;
 import is.hi.hbv501g.team_19_bank.model.LoginRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,11 +20,13 @@ public class ContentController {
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final AccountService accountService;
+    private final TokenBlacklist tokenBlacklist;
 
-    public ContentController(UserService userService, AccountService accountService, AuthenticationManager authenticationManager) {
+    public ContentController(UserService userService, AccountService accountService, AuthenticationManager authenticationManager, TokenBlacklist tokenBlacklist) {
         this.userService = userService;
         this.accountService = accountService;
         this.authenticationManager = authenticationManager;
+        this.tokenBlacklist = tokenBlacklist;
     }
 
     // Virkar með postman
@@ -34,6 +38,8 @@ public class ContentController {
                     loginRequest.getUsername(),
                     loginRequest.getPassword()
             );
+            // Log the generated token
+            System.out.println("Generated Token: " + token);
 
             return ResponseEntity.ok(Map.of(
                     "message", "Login successful",
@@ -48,6 +54,24 @@ public class ContentController {
         }
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutUser(HttpServletRequest request) {
+        String authorizationHeader = request.getHeader("Authorization");
+
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            String token = authorizationHeader.substring(7);
+            tokenBlacklist.addToken(token);
+            System.out.println("Token added to blacklist: " + token);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Logout successful. Token has been invalidated."
+            ));
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "error", "No valid token provided."
+        ));
+    }
+
 
     // Þetta virkar með postman
     @PostMapping("/signup")
@@ -59,60 +83,6 @@ public class ContentController {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
-    /*
-    @PostMapping("/signup")
-    public String registerUser(@ModelAttribute("bankUser") BankUser user, BindingResult result) {
-        if (result.hasErrors()) {
-            return "signup";
-        }
-
-        try {
-            userService.createUser(user);
-        } catch (IllegalArgumentException e) {
-            result.rejectValue("username", "user.exists", e.getMessage());
-            return "signup";
-        }
-
-        return "redirect:/login";
-    }
-
-      */
-
-    /**
-     * // Fer bara á index ef það auth, annars ertu reddirectaður á login
-     *
-     * @GetMapping("/") public String index(Model model) {
-     * Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-     * <p>
-     * if (authentication == null || "anonymousUser".equals(authentication.getName())) {
-     * return "redirect:/login";
-     * }
-     * <p>
-     * String username = authentication.getName();
-     * <p>
-     * BankUser user = userService.getUserByUsernameWithAccounts(username)
-     * .orElseThrow(() -> new RuntimeException("Authenticated user not found in database."));
-     * <p>
-     * // Bæta gögnum við Model-ið
-     * model.addAttribute("username", user.getUsername());
-     * <p>
-     * // Vegna þess að við neyðum bara einn reikning, getum við sótt hann beint
-     * double balance = user.getAccounts().get(0).getBalance();
-     * String accountNumber = user.getAccounts().get(0).getAccountNumber();
-     * <p>
-     * model.addAttribute("balance", String.format("%.2f", balance)); // Sýnir 0.00 í stað 0.0, breyttum þessu seinna í heilartölur
-     * model.addAttribute("accountNumber", accountNumber);
-     * model.addAttribute("creditScore", user.getCreditScore());
-     * <p>
-     * return "index";
-     * }
-     * @GetMapping("/login") public String login() {
-     * return "login";
-     * }
-     * @GetMapping("/signup") public String signup(Model model) {
-     * model.addAttribute("bankUser", new BankUser());
-     * return "signup";
-     * }
-     */
+    
 
 }
