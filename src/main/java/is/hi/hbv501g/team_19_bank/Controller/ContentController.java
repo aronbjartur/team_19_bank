@@ -9,6 +9,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -83,6 +85,23 @@ public class ContentController {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
-    
+
+    // NÝTT: Endpoint til að eyða notandareikningi
+    @PostMapping("/delete-account")
+    public String deleteAccount() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        boolean deleted = userService.deleteUserByUsername(username);
+
+        if (deleted) {
+            // Eyðing tókst - Vísar á útskráningu, sem vísar á login
+            return "redirect:/logout";
+        } else {
+            // Eyðing mistókst (balance ekki 0). Redirecta á heimasíðu til að sýna villu.
+            return "redirect:/?deleteError=true";
+        }
+    }
+
 
 }
