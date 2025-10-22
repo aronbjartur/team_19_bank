@@ -7,6 +7,7 @@ import lombok.Data;
 
 @Data
 public class LoanRequest {
+
     @NotBlank
     private String loanGiverAccount;
 
@@ -18,4 +19,5 @@ public class LoanRequest {
 
     @Size(max = 140)
     private String memo;
+    
 }

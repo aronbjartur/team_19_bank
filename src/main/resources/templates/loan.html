@@ -23,7 +23,7 @@
     <section class="card card--form">
         <h1 class="card__title">Request a Loan</h1>
 
-        <form th:action="@{/loanRequest}" th:object="${loanRequest}" method="post" class="form form--loan">
+        <form th:action="@{/loans}" th:object="${loanRequest}" method="post" class="form form--loan">
 
             <!-- Display general form errors -->
             <div th:if="${#fields.hasAnyErrors()}" class="alert alert--error">
@@ -31,7 +31,12 @@
                     <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
                 </ul>
             </div>
-
+            <div class="form__row">
+                <label class="form__label">From Account (e.g. 100200300)</label>
+                <input class="form__input" th:field="*{loanGiverAccount}" placeholder="Enter Source Account" required>
+                <small class="form__hint" th:if="${#fields.hasErrors('loanGiverAccount')}"
+                       th:errors="*{loanGiverAccount}"></small>
+            </div>
             <!-- TO ACCOUNT (Destination) - Now editable, defaults to user's account -->
             <div class="form__row">
                 <label class="form__label">To Account (Your Account)</label>

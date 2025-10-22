@@ -1,9 +1,11 @@
 package is.hi.hbv501g.team_19_bank.Service;
 
+import is.hi.hbv501g.team_19_bank.Security.JwtUtil;
 import is.hi.hbv501g.team_19_bank.model.Account;
 import is.hi.hbv501g.team_19_bank.model.BankUser;
 import is.hi.hbv501g.team_19_bank.repository.UserRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -22,6 +24,9 @@ public class UserService implements UserDetailsService {
     private UserRepository userRepository;
     private PasswordEncoder passwordEncoder; // -Ó
     private final AccountService accountService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Transactional
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -49,6 +54,17 @@ public class UserService implements UserDetailsService {
             user.getAccounts().size();
         }
         return userOpt;
+    }
+
+    public String authenticate(String username, String unhashedPassword) {
+        BankUser user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (passwordEncoder.matches(unhashedPassword, user.getPassword())) {
+            return jwtUtil.generateToken(username);
+        } else {
+            throw new IllegalArgumentException("Invalid credentials");
+        }
     }
 
     @Transactional
@@ -127,5 +143,13 @@ public class UserService implements UserDetailsService {
 
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
+    }
+
+    public void changePassword(BankUser user, String oldPassword, String newPassword) {
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Old password is incorrect.");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 }

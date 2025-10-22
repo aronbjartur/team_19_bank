@@ -1,64 +1,89 @@
 package is.hi.hbv501g.team_19_bank.Controller;
 
+import is.hi.hbv501g.team_19_bank.Security.TokenBlacklist;
 import is.hi.hbv501g.team_19_bank.Service.AccountService;
 import is.hi.hbv501g.team_19_bank.Service.UserService;
 import is.hi.hbv501g.team_19_bank.model.BankUser;
+import is.hi.hbv501g.team_19_bank.model.LoginRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
-@Controller
+import java.util.Map;
+
+@RestController
 public class ContentController {
-
+    private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final AccountService accountService;
+    private final TokenBlacklist tokenBlacklist;
 
-    public ContentController(UserService userService, AccountService accountService) {
+    public ContentController(UserService userService, AccountService accountService, AuthenticationManager authenticationManager, TokenBlacklist tokenBlacklist) {
         this.userService = userService;
         this.accountService = accountService;
+        this.authenticationManager = authenticationManager;
+        this.tokenBlacklist = tokenBlacklist;
     }
 
-    // Fer bara á index ef það auth, annars ertu reddirectaður á login
-    @GetMapping("/")
-    public String index(Model model, @RequestParam(value = "deleteError", required = false) Boolean deleteError) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    // Virkar með postman
+    @PostMapping("/login")
+    public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
+        System.out.println("Login request received: " + loginRequest);
+        try {
+            String token = userService.authenticate(
+                    loginRequest.getUsername(),
+                    loginRequest.getPassword()
+            );
+            // Log the generated token
+            System.out.println("Generated Token: " + token);
 
-        if (authentication == null || "anonymousUser".equals(authentication.getName())) {
-            return "redirect:/login";
+            return ResponseEntity.ok(Map.of(
+                    "message", "Login successful",
+                    "token", token
+            ));
+
+        } catch (IllegalArgumentException e) {
+            System.out.println("Authentication failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutUser(HttpServletRequest request) {
+        String authorizationHeader = request.getHeader("Authorization");
+
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            String token = authorizationHeader.substring(7);
+            tokenBlacklist.addToken(token);
+            System.out.println("Token added to blacklist: " + token);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Logout successful. Token has been invalidated."
+            ));
         }
 
-        String username = authentication.getName();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "error", "No valid token provided."
+        ));
+    }
 
-        BankUser user = userService.getUserByUsernameWithAccounts(username)
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found in database."));
 
-        // Bæta gögnum við Model-ið
-        model.addAttribute("username", user.getUsername());
-
-        // Vegna þess að við neyðum bara einn reikning, getum við sótt hann beint
-        double balance = user.getAccounts().get(0).getBalance();
-        String accountNumber = user.getAccounts().get(0).getAccountNumber();
-
-        model.addAttribute("balance", String.format("%.2f", balance));
-        model.addAttribute("accountNumber", accountNumber);
-        model.addAttribute("creditScore", user.getCreditScore());
-
-        // Bæta við flaggi fyrir eyðingu: true ef balance er 0, annars false
-        // Athuga hvort balance sé 0.0 eða minna (til að taka á minniháttar aukastafa villum)
-        model.addAttribute("canDelete", (balance <= 0.0));
-
-        // Sýna villu ef notandi reyndi að eyða reikningi með peningum
-        if (deleteError != null && deleteError) {
-            model.addAttribute("deleteError", true);
+    // Þetta virkar með postman
+    @PostMapping("/signup")
+    public ResponseEntity<String> registerUser(@RequestBody BankUser user) {
+        try {
+            userService.createUser(user);
+            return ResponseEntity.ok("User registered successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
-
-        return "index";
     }
 
     // NÝTT: Endpoint til að eyða notandareikningi
@@ -79,30 +104,4 @@ public class ContentController {
     }
 
 
-    @GetMapping("/login")
-    public String login() {
-        return "login";
-    }
-
-    @GetMapping("/signup")
-    public String signup(Model model) {
-        model.addAttribute("bankUser", new BankUser());
-        return "signup";
-    }
-
-    @PostMapping("/signup")
-    public String registerUser(@ModelAttribute("bankUser") BankUser user, BindingResult result) {
-        if (result.hasErrors()) {
-            return "signup";
-        }
-
-        try {
-            userService.createUser(user);
-        } catch (IllegalArgumentException e) {
-            result.rejectValue("username", "user.exists", e.getMessage());
-            return "signup";
-        }
-
-        return "redirect:/login";
-    }
 }

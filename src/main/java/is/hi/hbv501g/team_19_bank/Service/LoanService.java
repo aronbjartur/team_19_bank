@@ -157,6 +157,7 @@ public class LoanService {
         }
     }
 
+
     public Optional<Loan> getLoansByAuthenticatedUser(String authenticatedUser) {
         return loanRepository.findByAuthenticatedUser(authenticatedUser);
     }
