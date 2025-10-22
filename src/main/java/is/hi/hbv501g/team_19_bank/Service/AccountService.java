@@ -37,6 +37,7 @@ public class AccountService {
         return UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
     }
 
+
     public Optional<Account> getAccountByAccountNumber(String accountNumber) {
         return accountRepository.findByAccountNumber(accountNumber);
     }

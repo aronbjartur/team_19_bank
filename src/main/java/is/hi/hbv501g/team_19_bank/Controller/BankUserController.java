@@ -46,7 +46,6 @@ public class BankUserController {
     }
 
     // Delete user by ID (Virkar)
-    // virkar ekki hjá mér, allvegana ekki eftir breyttingar sem ég gerði núna -AB
     @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);

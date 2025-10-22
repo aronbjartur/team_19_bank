@@ -36,6 +36,8 @@
                     th:text="${#numbers.formatDecimal(loan.amount, 0, 'POINT', 2, 'POINT')}"></span></p>
 
             <p th:if="${loan.memo}"><strong>Memo:</strong> <span th:text="${loan.memo}"></span></p>
+            <p><strong>Interest Rate:</strong> <span
+                    th:text="${loan.interestRate)}"></span></p>
 
             <!-- Display the reason if the transfer failed -->
             <p class="alert alert--error" th:if="${loan.failureReason != null and loan.failureReason != ''}">

@@ -3,17 +3,21 @@ package is.hi.hbv501g.team_19_bank.Controller;
 import is.hi.hbv501g.team_19_bank.Service.AccountService;
 import is.hi.hbv501g.team_19_bank.Service.LoanService;
 import is.hi.hbv501g.team_19_bank.Service.UserService;
+import is.hi.hbv501g.team_19_bank.model.Account;
 import is.hi.hbv501g.team_19_bank.model.Loan;
+import is.hi.hbv501g.team_19_bank.model.LoanPaymentRequest;
 import is.hi.hbv501g.team_19_bank.model.LoanRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Controller // Kannski breyta þessu í @Controller ef við viljum skila HTML síðum
@@ -74,51 +78,110 @@ public class LoanController {
     }
 
     @PostMapping
-    public String submit(@ModelAttribute("loanRequest") @Valid LoanRequest req,
-                         BindingResult binding,
-                         Model model) {
+    public ResponseEntity<?> createLoan(@RequestBody @Valid LoanRequest req) {
+        try {
+            // Log the incoming request
+            System.out.println("Loan request received: " + req);
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
+            // Hardcoded loan giver account number
+            final String bankAccountNumber = "100200300";
 
-        // Fá reikningsnúmerið aftur fyrir villumeðhöndlun
-        Long userId = userService.getUserByUsernameWithAccounts(username)
-                .orElseThrow(() -> new RuntimeException("User not found")).getId();
-        String userAccountNumber = userService.getUserAccount(userId).getAccountNumber();
+            // Validate the loan giver account
+            if (!req.getLoanGiverAccount().equals(bankAccountNumber)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                        "error", "Loan giver account must be the bank account."
+                ));
+            }
 
-        model.addAttribute("userAccountNumber", userAccountNumber);
+            // Get the authenticated user's username
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = auth.getName();
+            if (username.equals("anonymousUser")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                        "error", "User is not authenticated."
+                ));
+            }
+            System.out.println("Authenticated user: " + username);
 
-        if (binding.hasErrors()) {
-            return "loan";
+            // Validate user and retrieve their account number
+            Long userId = userService.getUserByUsernameWithAccounts(username)
+                    .orElseThrow(() -> new RuntimeException("User not found")).getId();
+            String userAccountNumber = userService.getUserAccount(userId).getAccountNumber();
+
+            // Ensure the loan receiver account matches the user's account
+            if (!req.getLoanReceiverAccount().equals(userAccountNumber)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                        "error", "Loan receiver account does not belong to the authenticated user."
+                ));
+            }
+
+            // Process the loan
+            Loan submittedLoan = loanService.loan(req);
+
+            // Retrieve the confirmed loan
+            Loan confirmedLoan = loanService.getLoanById(submittedLoan.getLoanId())
+                    .orElse(submittedLoan);
+
+            // Return the loan details
+            return ResponseEntity.ok(Map.of(
+                    "message", "Loan created successfully",
+                    "loan", confirmedLoan
+            ));
+
+        } catch (Exception e) {
+            // Handle errors and return a bad request response
+            System.out.println("Error during loan creation: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "error", e.getMessage()
+            ));
         }
-
-        Loan submittedLoan = loanService.loan(req);
-
-        Loan confirmedLoan = loanService.getLoanById(submittedLoan.getLoanId())
-                .orElse(submittedLoan); // Fallback ef það finnst ekki.
-
-        model.addAttribute("loan", confirmedLoan);
-        return "loan_result";
     }
-/**
- @PutMapping("/pay") public ResponseEntity<Loan> payLoan(@ModelAttribute("loanPaymentRequest") @Valid LoanPaymentRequest request,
- BindingResult binding,
- Model model) {
- Authentication auth = SecurityContextHolder.getContext().getAuthentication();
- String username = auth.getName();
- // Fetch the loan by ID
- Loan loan = loanService.getLoanById(request.getLoanId())
- .orElseThrow(() -> new RuntimeException("Loan not found with ID: " + request.getLoanId()));
- Long userId = userService.getUserByUsernameWithAccounts(username)
- .orElseThrow(() -> new RuntimeException("User not found")).getId();
- String userAccountNumber = userService.getUserAccount(userId).getAccountNumber();
- // Fetch the payer's account by account number
- Account payerAccount = accountService.getAccountByAccountNumber(userAccountNumber)
- .orElseThrow(() -> new RuntimeException("Account not found with account number: " + userAccountNumber));
 
- // Call the pay method in LoanService
- Loan updatedLoan = loanService.pay(loan, payerAccount);
+    @PutMapping("/pay")
+    public ResponseEntity<?> payLoan(@RequestBody @Valid LoanPaymentRequest request) {
+        try {
+            // Log the incoming request
+            System.out.println("Loan payment request received: " + request);
 
- return ResponseEntity.ok(updatedLoan);
- }**/
+            // Get the authenticated user's username
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = auth.getName();
+            if (username.equals("anonymousUser")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                        "error", "User is not authenticated."
+                ));
+            }
+            System.out.println("Authenticated user: " + username);
+
+            // Fetch the loan by ID
+            Loan loan = loanService.getLoanById(request.getLoanId())
+                    .orElseThrow(() -> new RuntimeException("Loan not found with ID: " + request.getLoanId()));
+
+            // Fetch the authenticated user's account
+            Account userAccount = accountService.getAccountByAccountNumber(request.getPayerAccount())
+                    .orElseThrow(() -> new RuntimeException("Account not found with account number: " + request.getPayerAccount()));
+
+            // Process the payment
+            Loan updatedLoan = loanService.pay(loan, userAccount);
+
+            // Check if the loan was successfully paid
+            if (updatedLoan.getStatus() == Loan.LoanStatus.PAID_OFF) {
+                return ResponseEntity.ok(Map.of(
+                        "message", "Loan payment successful",
+                        "loan", updatedLoan
+                ));
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                        "error", "Loan payment failed. Check account balance or loan details."
+                ));
+            }
+
+        } catch (Exception e) {
+            // Handle errors and return a bad request response
+            System.out.println("Error during loan payment: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "error", e.getMessage()
+            ));
+        }
+    }
 }

@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.Instant;
-import java.time.LocalDate;
 
 @Entity
 @Table(name = "loans")
@@ -17,11 +16,6 @@ public class Loan {
     @Column(nullable = false)
     private Double loanAmount;
     // Gæti þurft að breyta þessu
-    @Column(nullable = false)
-    private LocalDate startDate;
-
-    @Column(nullable = false)
-    private Double interestRate;
 
     @Column(nullable = false)
     private String loanGiverAccount;
@@ -40,19 +34,38 @@ public class Loan {
     private LoanStatus status = LoanStatus.PENDING;
 
     private String failureReason = "";
+    private Double interestRateAfterApproval = 1.05;
+
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
-    public void setUser(String authenticatedUser) {
-        this.authenticatedUser = authenticatedUser;
-    }
 
     public enum LoanStatus {
         APPROVED,
         REJECTED,
         PENDING,
         PAID_OFF
+    }
+
+    public void setUser(String authenticatedUser) {
+        this.authenticatedUser = authenticatedUser;
+    }
+
+    public String getMemo() {
+        return memo;
+    }
+
+    public void setMemo(String memo) {
+        this.memo = memo;
+    }
+
+    public Double getInterestRateAfterApproval() {
+        return interestRateAfterApproval;
+    }
+
+    public void setInterestRateAfterApproval(Double interestRateAfterApproval) {
+        this.interestRateAfterApproval = interestRateAfterApproval;
     }
 
     public Long getLoanId() {
@@ -69,22 +82,6 @@ public class Loan {
 
     public void setLoanAmount(Double loanAmount) {
         this.loanAmount = loanAmount;
-    }
-
-    public LocalDate getStartDate() {
-        return startDate;
-    }
-
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
-    }
-
-    public Double getInterestRate() {
-        return interestRate;
-    }
-
-    public void setInterestRate(Double interestRate) {
-        this.interestRate = interestRate;
     }
 
 
