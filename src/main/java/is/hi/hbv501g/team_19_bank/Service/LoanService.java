@@ -22,11 +22,38 @@ public class LoanService {
     private final UserService userService;
     private final AccountRepository accountRepository;
 
+    // UC11: Define the maximum total outstanding loans the bank can handle
+    private static final double MAX_BANK_LIABILITY = 500000000.00; // 500 Million kr
+
+    // The Bank's actual account number (used for DB lookup)
+    private static final String ANCHOR_ACCOUNT_NUMBER = "bank"; // CHANGED: Now using "bank"
+
     public LoanService(LoanRepository loanRepository, UserService userService, AccountRepository accountRepository) {
         this.loanRepository = loanRepository;
         this.userService = userService;
         this.accountRepository = accountRepository;
     }
+
+    // UC11: New method to check if the bank has reached its total lending limit
+    private boolean checkBankCapacity(double newLoanAmount) {
+        // 1. Get all active loans (where status is APPROVED or PENDING/UNPAID)
+        List<Loan> activeLoans = loanRepository.findByStatusIn(
+                List.of(Loan.LoanStatus.APPROVED, Loan.LoanStatus.PENDING)
+        );
+
+        // 2. Calculate the total outstanding amount
+        double currentTotalLiability = activeLoans.stream()
+                .mapToDouble(Loan::getLoanAmount)
+                .sum();
+
+        // 3. Check if the new loan pushes the bank over the limit
+        if (currentTotalLiability + newLoanAmount > MAX_BANK_LIABILITY) {
+            System.out.println("UC11 Check: Bank capacity exceeded by new loan.");
+            return false;
+        }
+        return true;
+    }
+
 
     @Transactional
     public Loan loan(LoanRequest loanRequest) {
@@ -40,14 +67,28 @@ public class LoanService {
         if (loanRequest.getLoanGiverAccount() == null || loanRequest.getLoanReceiverAccount() == null) {
             return reject(loanRequest, "Bank lender and loan receiver accounts are required.");
         }
+
+        // CHECK 1: Ensure Loan Giver is "Bank" (case-insensitive)
+        if (!loanRequest.getLoanGiverAccount().equalsIgnoreCase("Bank")) {
+            return reject(loanRequest, "Loan giver account must be the bank (identified by 'Bank').");
+        }
+
         if (loanRequest.getLoanGiverAccount().equals(loanRequest.getLoanReceiverAccount())) {
             return reject(loanRequest, "Lender account cannot be same as loan receiver account.");
         }
         if (loanRequest.getAmount() <= 0) {
             return reject(loanRequest, "Amount must be greater than 0 kr.");
         }
-        Account lender = accountRepository.findByAccountNumber("100200300").orElse(null);
+
+        // UC11: Check Bank Capacity
+        if (!checkBankCapacity(loanRequest.getAmount())) {
+            return reject(loanRequest, "Bank has reached its maximum lending capacity. Try again later.");
+        }
+
+        // Use the actual account number to retrieve the bank account
+        Account lender = accountRepository.findByAccountNumber(ANCHOR_ACCOUNT_NUMBER).orElse(null);
         Account receiver = accountRepository.findByAccountNumber(loanRequest.getLoanReceiverAccount()).orElse(null);
+
         // Determine maximum withdrawal amount based on credit score
         int creditScore = receiver.getUser().getCreditScore();
         System.out.println("Credit Score: " + creditScore);
@@ -83,7 +124,10 @@ public class LoanService {
         Loan loan = new Loan();
         loan.setUser(authenticatedUser.getUsername());
         loan.setLoanAmount(loanRequest.getAmount());
-        loan.setLoanGiverAccount(loanRequest.getLoanGiverAccount());
+
+        // Store the Giver as the identifier "Bank" for display purposes
+        loan.setLoanGiverAccount("Bank");
+
         loan.setLoanReceiverAccount(loanRequest.getLoanReceiverAccount());
         loan.setMemo(loanRequest.getMemo());
         loan.setStatus(Loan.LoanStatus.PENDING);
@@ -99,6 +143,13 @@ public class LoanService {
 
     private Loan reject(LoanRequest req, String reason) {
         Loan l = new Loan();
+
+        // FIX: Ensure authenticated_user is set to avoid DB NULL constraint error
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            l.setUser(authentication.getName());
+        }
+
         l.setLoanGiverAccount(req.getLoanGiverAccount());
         l.setLoanReceiverAccount(req.getLoanReceiverAccount());
         l.setLoanAmount(req.getAmount());
@@ -119,7 +170,7 @@ public class LoanService {
         }
 
         // Get the bank's account (loan giver)
-        Account bankAccount = accountRepository.findByAccountNumber("100200300")
+        Account bankAccount = accountRepository.findByAccountNumber(ANCHOR_ACCOUNT_NUMBER) // Uses the actual number
                 .orElseThrow(() -> new RuntimeException("Bank account not found"));
 
         // Perform the payment

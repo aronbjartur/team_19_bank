@@ -84,10 +84,11 @@ public class LoanController {
             System.out.println("Loan request received: " + req);
 
             // Hardcoded loan giver account number
-            final String bankAccountNumber = "100200300";
+            // REMOVED: final String bankAccountNumber = "100200300"; // No longer needed here
 
             // Validate the loan giver account
-            if (!req.getLoanGiverAccount().equals(bankAccountNumber)) {
+            // MODIFIED: Use case-insensitive check against "bank"
+            if (!req.getLoanGiverAccount().equalsIgnoreCase("bank")) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
                         "error", "Loan giver account must be the bank account."
                 ));
@@ -122,7 +123,17 @@ public class LoanController {
             Loan confirmedLoan = loanService.getLoanById(submittedLoan.getLoanId())
                     .orElse(submittedLoan);
 
-            // Return the loan details
+            // --- FIX START: Check for REJECTION status (UC10 Failure) ---
+            if (confirmedLoan.getStatus() == Loan.LoanStatus.REJECTED) {
+                // Return a 400 Bad Request and detail the rejection
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                        "error", confirmedLoan.getFailureReason(),
+                        "loan", confirmedLoan // Still include loan object for full context
+                ));
+            }
+            // --- FIX END ---
+
+            // Return the loan details (only runs if status is APPROVED/PENDING/COMPLETED)
             return ResponseEntity.ok(Map.of(
                     "message", "Loan created successfully",
                     "loan", confirmedLoan

@@ -1,5 +1,5 @@
 package is.hi.hbv501g.team_19_bank.Service;
-// þannig að 100200300 hefur milljón alltaf, alltaf hægt að taka pening þaðan
+// þannig að bankaccount "bank" hefur trlljón alltaf, alltaf hægt að taka pening þaðan
 
 import is.hi.hbv501g.team_19_bank.model.Account;
 import is.hi.hbv501g.team_19_bank.repository.AccountRepository;
@@ -19,7 +19,7 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        final String TEST_ACCOUNT_NUMBER = "100200300";
+        final String TEST_ACCOUNT_NUMBER = "bank"; // CHANGED: Now using "bank"
         final double STARTING_BALANCE = 1000000000000.00;
 
         Optional<Account> existingAccount = accountRepository.findByAccountNumber(TEST_ACCOUNT_NUMBER);
