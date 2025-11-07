@@ -13,7 +13,7 @@ import java.util.Date;
 public class JwtUtil {
 
     // Use a static, hardcoded Base64-encoded secret key
-    private static final String SECRET = "your-static-secret-key-which-is-at-least-32-characters-long";
+    private static final String SECRET = "your-static-secret-key-which-is-at-least-32-characters-longrtert";
     private static final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(SECRET.getBytes());
 
     public String generateToken(String username) {
