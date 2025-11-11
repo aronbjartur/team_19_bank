@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Signup Form</title>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <link rel="stylesheet" href="/css/style.css"/>
+    <script src="/js/signup.js" defer></script> </head>
+<body>
+<section>
+    <form th:object="${bankUser}" action="/signup" method="POST">
+        <h1>Sign Up</h1>
+
+        <div class="inputbox">
+            <ion-icon name="person-outline"></ion-icon>
+            <input type="text" id="username" th:field="*{username}" required/>
+            <label for="username">Name</label>
+        </div>
+
+        <div class="inputbox">
+            <ion-icon name="mail-outline"></ion-icon>
+            <input type="email" id="email" th:field="*{email}" required/>
+            <label for="email">Email</label>
+        </div>
+
+        <div class="inputbox">
+            <ion-icon name="lock-closed-outline"></ion-icon>
+            <input type="password" id="password" th:field="*{password}" required/>
+            <label for="password">Password</label>
+        </div>
+
+        <div class="inputbox">
+            <ion-icon name="lock-closed-outline"></ion-icon>
+            <input type="password" id="confirmPassword" name="confirmPassword" required/>
+            <label for="confirmPassword">Confirm Password</label>
+        </div>
+
+        <div class="inputbox">
+            <ion-icon name="calculator-outline"></ion-icon>
+            <input type="number" id="creditScore" th:field="*{creditScore}" required/>
+            <label for="creditScore">Credit Score</label>
+        </div>
+
+        <button id="submit" type="submit">Sign Up</button>
+
+        <div class="register">
+            <p id="passwordError" style="color: red; display: none;">Passwords do not match!</p>
+            <p>Already have an account? <a th:href="@{/login}">Log In</a></p>
+        </div>
+    </form>
+</section>
+</body>
+</html>
+
+<!-- eyddi öllu þessu en hef það í komment fyrir neðan -AB -->
+
+<!-- <script>
+
+  const submitButttom = document.getElementById('submit');
+
+  submitButttom.addEventListener('click', () => {
+
+    const username = document.getElementById('username').value;
+
+    const password = document.getElementById('password').value;
+
+    const confirmPassword = document.getElementById('passwordcon').value;
+
+    const email = document.getElementById('email').value;
+
+    const data = {
+
+      username,
+
+      email,
+
+      password,
+
+    };
+
+
+
+    if (password == confirmPassword) {
+
+      const jsonData = JSON.stringify(data);
+
+      fetch('/req/signup', {
+
+        method: 'POST',
+
+        headers: {
+
+          'Content-Type': 'application/json',
+
+        },
+
+        body: jsonData,
+
+      }).then((response) => {
+
+        //alert('successful');
+
+        //if(response.status == 200){
+
+        //alert('successful');
+
+        //xs}
+
+      });
+
+    }
+
+  });
+
+
+
+</script> -->

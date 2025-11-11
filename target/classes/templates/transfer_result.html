@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Use a safe method to compare the status -->
+    <title th:text="${transfer.status.toString() == 'COMPLETED'} ? 'Transfer Completed' : 'Transfer Failed'">Transfer
+        Result</title>
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body class="page page--transfer-result">
+<header class="site-header">
+    <nav class="nav">
+        <a href="/" class="nav__brand">Team 19 Bank</a>
+        <div class="nav__links">
+            <a href="/" class="nav__link">Home</a>
+            <a href="/loan" class="nav__link nav__link--active">Loan</a>
+            <form th:action="@{/logout}" method="post" style="display: inline-block;">
+                <button type="submit" class="nav__link nav__link--button">Logout</button>
+            </form>
+        </div>
+    </nav>
+</header>
+
+<main class="container">
+    <section class="card">
+        <h1 class="card__title"
+            th:text="${transfer.status.toString() == 'COMPLETED'} ? 'Transfer Completed' : 'Transfer Failed'">
+            Transfer Result
+        </h1>
+
+        <div class="details">
+            <p><strong>From:</strong> <span th:text="${transfer.sourceAccount}"></span></p>
+            <p><strong>To:</strong> <span th:text="${transfer.destinationAccount}"></span></p>
+
+            <!-- Using the safest formatDecimal pattern -->
+            <p><strong>Amount:</strong> kr <span
+                    th:text="${#numbers.formatDecimal(transfer.amount, 0, 'POINT', 2, 'POINT')}"></span></p>
+
+            <p th:if="${transfer.memo}"><strong>Memo:</strong> <span th:text="${transfer.memo}"></span></p>
+
+            <!-- Display the reason if the transfer failed -->
+            <p class="alert alert--error" th:if="${transfer.failureReason != null and transfer.failureReason != ''}">
+                <strong>Reason:</strong> <span th:text="${transfer.failureReason}"></span>
+            </p>
+
+        </div>
+
+        <div class="form__actions">
+            <a class="btn btn--primary" href="/transfer">Make another transfer</a>
+            <a class="btn btn--ghost" href="/">Back to home</a>
+        </div>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <p>&copy; Team 19 Bank</p>
+</footer>
