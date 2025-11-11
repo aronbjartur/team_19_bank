@@ -15,6 +15,9 @@ COPY src/ src/
 # Copy the Maven wrapper and project files into the container
 RUN ./mvnw clean package -DskipTests
 
+# Ensure the JAR file exists before copying
+RUN ls -l target/
+
 # Copy the JAR file from the target directory into the container
 COPY target/team_19_bank-0.0.1-SNAPSHOT.jar app.jar
 
