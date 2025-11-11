@@ -1,5 +1,5 @@
 # Use an official OpenJDK image as the base image
-FROM eclipse-temurin:17-jdk-alpine
+FROM eclipse-temurin:21-jdk-alpine
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -14,9 +14,6 @@ RUN ./mvnw dependency:go-offline -B
 COPY src/ src/
 # Copy the Maven wrapper and project files into the container
 RUN ./mvnw clean package -DskipTests
-
-# Ensure the JAR file exists before copying
-RUN ls -l target/
 
 # Copy the JAR file from the target directory into the container
 COPY target/team_19_bank-0.0.1-SNAPSHOT.jar app.jar
