@@ -3,7 +3,15 @@ FROM eclipse-temurin:17-jdk-alpine
 
 # Set the working directory inside the container
 WORKDIR /app
+# Copy the Maven wrapper and project files into the container
+COPY .mvn/ .mvn/
+COPY mvnw pom.xml ./
 
+# Download dependencies without running tests
+RUN ./mvnw dependency:go-offline -B
+
+# Copy the source code into the container
+COPY src/ src/
 # Copy the Maven wrapper and project files into the container
 RUN ./mvnw clean package -DskipTests
 
