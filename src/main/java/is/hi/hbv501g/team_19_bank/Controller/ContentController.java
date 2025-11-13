@@ -77,10 +77,11 @@ public class ContentController {
 
     // Þetta virkar með postman
     @PostMapping("/signup")
-    public ResponseEntity<String> registerUser(@RequestBody BankUser user) {
+    public ResponseEntity<?> registerUser(@RequestBody BankUser user) {
         try {
             userService.createUser(user);
-            return ResponseEntity.ok("User registered successfully");
+            return ResponseEntity.ok(Map.of("message", "User registered successfully",
+                    "Accountnumber", user.getAccounts().get(0).getAccountNumber()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
