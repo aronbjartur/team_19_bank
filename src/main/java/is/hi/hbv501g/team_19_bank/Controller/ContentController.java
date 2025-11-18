@@ -79,9 +79,9 @@ public class ContentController {
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@RequestBody BankUser user) {
         try {
-            userService.createUser(user);
+            BankUser savedUser = userService.createUser(user);
             return ResponseEntity.ok(Map.of("message", "User registered successfully",
-                    "Accountnumber", user.getAccounts().get(0).getAccountNumber()));
+                    "Accountnumber", savedUser.getAccounts().get(0).getAccountNumber()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
