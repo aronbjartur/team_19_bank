@@ -152,4 +152,8 @@ public class UserService implements UserDetailsService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
+
+    public Optional<BankUser> findByUsername(String username) {
+        return userRepository.findByUsername(username);
+    }
 }

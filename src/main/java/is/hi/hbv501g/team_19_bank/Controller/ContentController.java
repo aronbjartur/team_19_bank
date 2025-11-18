@@ -11,11 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 public class ContentController {
@@ -101,6 +100,20 @@ public class ContentController {
         } else {
             // Eyðing mistókst (balance ekki 0). Redirecta á heimasíðu til að sýna villu.
             return "redirect:/?deleteError=true";
+        }
+    }
+
+    @GetMapping("/accountnumber/{username}")
+    public ResponseEntity<?> getAccountNumberByUsername(@PathVariable String username) {
+        try {
+            Optional<BankUser> userOpt = userService.findByUsername(username); // Service returns Optional
+            if (userOpt.isEmpty() || userOpt.get().getAccounts().isEmpty()) {
+                return ResponseEntity.status(404).body(Map.of("error", "User or account not found"));
+            }
+            String accountNumber = userOpt.get().getAccounts().get(0).getAccountNumber();
+            return ResponseEntity.ok(Map.of("Accountnumber", accountNumber));
+        } catch (Exception e) {
+            return ResponseEntity.status(404).body(Map.of("error", "User or account not found"));
         }
     }
 
