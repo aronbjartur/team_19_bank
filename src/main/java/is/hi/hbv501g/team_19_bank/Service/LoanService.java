@@ -46,7 +46,7 @@ public class LoanService {
         if (loanRequest.getAmount() <= 0) {
             return reject(loanRequest, "Amount must be greater than 0 kr.");
         }
-        Account lender = accountRepository.findByAccountNumber("100200300").orElse(null);
+        Account lender = accountRepository.findByAccountNumber("bank").orElse(null);
         Account receiver = accountRepository.findByAccountNumber(loanRequest.getLoanReceiverAccount()).orElse(null);
         // Determine maximum withdrawal amount based on credit score
         int creditScore = receiver.getUser().getCreditScore();
@@ -119,7 +119,7 @@ public class LoanService {
         }
 
         // Get the bank's account (loan giver)
-        Account bankAccount = accountRepository.findByAccountNumber("100200300")
+        Account bankAccount = accountRepository.findByAccountNumber("bank")
                 .orElseThrow(() -> new RuntimeException("Bank account not found"));
 
         // Perform the payment

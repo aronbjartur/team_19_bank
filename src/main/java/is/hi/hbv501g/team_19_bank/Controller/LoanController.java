@@ -84,7 +84,7 @@ public class LoanController {
             System.out.println("Loan request received: " + req);
 
             // Hardcoded loan giver account number
-            final String bankAccountNumber = "100200300";
+            final String bankAccountNumber = "bank";
 
             // Validate the loan giver account
             if (!req.getLoanGiverAccount().equals(bankAccountNumber)) {
