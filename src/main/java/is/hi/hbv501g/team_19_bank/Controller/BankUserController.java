@@ -38,6 +38,18 @@ public class BankUserController {
         return userService.getAllUsers();
     }
 
+    @GetMapping("/me/id")
+    public ResponseEntity<?> getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        // Find user by username
+        BankUser user = userService.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return ResponseEntity.ok(Map.of("id", user.getId()));
+    }
+
     @GetMapping("/{id}")
     public BankUser getUser(@PathVariable Long id) {
         return userService.getUserById(id)
@@ -108,5 +120,5 @@ public class BankUserController {
 
         return ResponseEntity.ok(transactions);
     }
-    
+
 }
