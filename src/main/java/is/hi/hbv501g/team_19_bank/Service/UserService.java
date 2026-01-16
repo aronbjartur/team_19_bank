@@ -6,6 +6,7 @@ import is.hi.hbv501g.team_19_bank.model.BankUser;
 import is.hi.hbv501g.team_19_bank.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -19,6 +20,7 @@ import java.util.Optional;
 
 @Service
 @AllArgsConstructor
+@Primary //nýtt, tjékka á þessu
 public class UserService implements UserDetailsService {
 
     private UserRepository userRepository;
