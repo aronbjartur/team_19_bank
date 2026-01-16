@@ -24,13 +24,22 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.headers(headers -> headers.frameOptions().disable())
-                .csrf().disable()
-                .authorizeHttpRequests()
-                .requestMatchers("/login", "/signup", "/h2-console/**").permitAll()
-                .anyRequest().authenticated()
-                .and()
-                .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, tokenBlacklist), UsernamePasswordAuthenticationFilter.class);
+        http
+                // 1. Disable CSRF for API usage
+                .csrf(csrf -> csrf.disable())
+
+                // 2. Fix H2 Console access
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+
+                // 3. New Lambda-style auth rules
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/login", "/signup", "/h2-console/**", "/error").permitAll()
+                        .anyRequest().authenticated()
+                )
+
+                // 4. Add your JWT Filter
+                .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, tokenBlacklist),
+                        UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

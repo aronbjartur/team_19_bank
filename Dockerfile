@@ -1,28 +1,24 @@
-# Use an official OpenJDK image as the base image
-FROM eclipse-temurin:17-jdk-alpine
-
-# Set the working directory inside the container
+# Stage 1: Build the application
+# We use JDK 21 as seen in your earlier logs
+FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /app
-# Copy the Maven wrapper and project files into the container
+
+# Copy the maven wrapper and pom first to cache dependencies
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
-
-# Download dependencies without running tests
 RUN ./mvnw dependency:go-offline -B
 
-# Copy the source code into the container
+# Copy source and build the JAR
 COPY src/ src/
-# Copy the Maven wrapper and project files into the container
 RUN ./mvnw clean package -DskipTests
 
-# Ensure the JAR file exists before copying
-RUN ls -l target/
+# Stage 2: Run the application
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
 
-# Copy the JAR file from the target directory into the container
-COPY target/team_19_bank-0.0.1-SNAPSHOT.jar app.jar
+# Crucial fix: COPY --from=build tells Docker to grab the file
+# from the 'build' stage above, NOT from your GitHub files.
+COPY --from=build /app/target/team_19_bank-0.0.1-SNAPSHOT.jar app.jar
 
-# Expose the port your Spring Boot application runs on
 EXPOSE 8080
-
-# Define the command to run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

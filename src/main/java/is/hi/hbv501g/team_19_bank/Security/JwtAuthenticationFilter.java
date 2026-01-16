@@ -23,9 +23,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        // Exclude specific endpoints from the filter
-        String path = request.getRequestURI();
-        return path.startsWith("/login") || path.startsWith("/signup") || path.startsWith("/h2-console");
+        String path = request.getServletPath();
+        // Use a list of public paths
+        return path.equals("/login") ||
+                path.equals("/signup") ||
+                path.startsWith("/h2-console") ||
+                path.equals("/error"); // IMPORTANT: Allow the error path!
     }
 
     // Þetta er að sía fyrir request eftir login, athugar hvort þau innihaldi gilt JWT token
