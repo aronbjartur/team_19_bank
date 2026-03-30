@@ -29,7 +29,7 @@ public class TransferService {
     }
 
     public List<Transfer> getTransactionsByAccountNumber(String accountNumber) {
-        return transfers.findBySourceAccount(accountNumber);
+        return transfers.findBySourceAccountOrDestinationAccount(accountNumber, accountNumber);
     }
 
     /**

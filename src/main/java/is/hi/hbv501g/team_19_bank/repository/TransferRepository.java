@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface TransferRepository extends JpaRepository<Transfer, Long> {
     List<Transfer> findBySourceAccount(String accountNumber);
+    List<Transfer> findBySourceAccountOrDestinationAccount(String source, String destination);
 }
