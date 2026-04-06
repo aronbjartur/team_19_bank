@@ -17,10 +17,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@Controller // Kannski breyta þessu í @Controller ef við viljum skila HTML síðum
+@Controller
 @RequestMapping("/loans")
 public class LoanController {
     private final LoanService loanService;
@@ -34,21 +36,49 @@ public class LoanController {
         this.accountService = accountService;
     }
 
-
     @GetMapping("/user-loans")
-    public Optional<Loan> getUserLoans(Authentication authentication) {
+    @ResponseBody
+    public List<Loan> getUserLoans(Authentication authentication) {
         String username = authentication.getName();
         return loanService.getLoansByAuthenticatedUser(username);
     }
 
-    // Get a loan by ID
+    @GetMapping("/my")
+    @ResponseBody
+    public ResponseEntity<?> getMyLoans(Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            List<Loan> loans = loanService.getLoansVisibleToUser(username);
+            return ResponseEntity.ok(loans);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+    @GetMapping("/pending-approval")
+    @ResponseBody
+    public ResponseEntity<?> getPendingApprovalLoans(Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            List<Loan> loans = loanService.getPendingApprovalLoans(username);
+            return ResponseEntity.ok(loans);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
     @GetMapping("/{id}")
+    @ResponseBody
     public Optional<Loan> getLoanById(@PathVariable Long id) {
         return loanService.getLoanById(id);
     }
 
-    // Delete a loan by ID
     @DeleteMapping("/{id}")
+    @ResponseBody
     public void deleteLoan(@PathVariable Long id) {
         loanService.deleteLoan(id);
     }
@@ -59,17 +89,13 @@ public class LoanController {
         String username = auth.getName();
 
         try {
-            // Fá ID og reikningsnúmer notanda
             Long userId = userService.getUserByUsernameWithAccounts(username)
                     .orElseThrow(() -> new RuntimeException("User not found")).getId();
 
             String userAccountNumber = userService.getUserAccount(userId).getAccountNumber();
-
-            // Setja reikningsnúmerið í model-ið
             model.addAttribute("userAccountNumber", userAccountNumber);
 
         } catch (Exception e) {
-            // Ef villa, þá áframsenda á login síðuna (ætti ekki að gerast ef innskráning tókst)
             return "redirect:/login";
         }
 
@@ -78,23 +104,11 @@ public class LoanController {
     }
 
     @PostMapping
+    @ResponseBody
     public ResponseEntity<?> createLoan(@RequestBody @Valid LoanRequest req) {
         try {
-            // Log the incoming request
             System.out.println("Loan request received: " + req);
 
-            // Hardcoded loan giver account number
-            // REMOVED: final String bankAccountNumber = "100200300"; // No longer needed here
-
-            // Validate the loan giver account
-            // MODIFIED: Use case-insensitive check against "bank"
-            if (!req.getLoanGiverAccount().equalsIgnoreCase("bank")) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
-                        "error", "Loan giver account must be the bank account."
-                ));
-            }
-
-            // Get the authenticated user's username
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String username = auth.getName();
             if (username.equals("anonymousUser")) {
@@ -102,45 +116,35 @@ public class LoanController {
                         "error", "User is not authenticated."
                 ));
             }
-            System.out.println("Authenticated user: " + username);
 
-            // Validate user and retrieve their account number
             Long userId = userService.getUserByUsernameWithAccounts(username)
                     .orElseThrow(() -> new RuntimeException("User not found")).getId();
             String userAccountNumber = userService.getUserAccount(userId).getAccountNumber();
 
-            // Ensure the loan receiver account matches the user's account
             if (!req.getLoanReceiverAccount().equals(userAccountNumber)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
                         "error", "Loan receiver account does not belong to the authenticated user."
                 ));
             }
 
-            // Process the loan
             Loan submittedLoan = loanService.loan(req);
+            Loan confirmedLoan = loanService.getLoanById(submittedLoan.getLoanId()).orElse(submittedLoan);
 
-            // Retrieve the confirmed loan
-            Loan confirmedLoan = loanService.getLoanById(submittedLoan.getLoanId())
-                    .orElse(submittedLoan);
-
-            // --- FIX START: Check for REJECTION status (UC10 Failure) ---
             if (confirmedLoan.getStatus() == Loan.LoanStatus.REJECTED) {
-                // Return a 400 Bad Request and detail the rejection
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
                         "error", confirmedLoan.getFailureReason(),
-                        "loan", confirmedLoan // Still include loan object for full context
+                        "loan", confirmedLoan
                 ));
             }
-            // --- FIX END ---
 
-            // Return the loan details (only runs if status is APPROVED/PENDING/COMPLETED)
             return ResponseEntity.ok(Map.of(
-                    "message", "Loan created successfully",
+                    "message", confirmedLoan.getStatus() == Loan.LoanStatus.PENDING
+                            ? "Loan request created and is waiting for lender approval"
+                            : "Loan created successfully",
                     "loan", confirmedLoan
             ));
 
         } catch (Exception e) {
-            // Handle errors and return a bad request response
             System.out.println("Error during loan creation: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
                     "error", e.getMessage()
@@ -148,13 +152,13 @@ public class LoanController {
         }
     }
 
-    @PutMapping("/pay")
-    public ResponseEntity<?> payLoan(@RequestBody @Valid LoanPaymentRequest request) {
+    @PutMapping("/{id}/approve")
+    @ResponseBody
+    public ResponseEntity<?> approveLoan(
+            @PathVariable Long id,
+            @RequestParam(required = false) String dueAt
+    ) {
         try {
-            // Log the incoming request
-            System.out.println("Loan payment request received: " + request);
-
-            // Get the authenticated user's username
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String username = auth.getName();
             if (username.equals("anonymousUser")) {
@@ -162,33 +166,82 @@ public class LoanController {
                         "error", "User is not authenticated."
                 ));
             }
-            System.out.println("Authenticated user: " + username);
 
-            // Fetch the loan by ID
-            Loan loan = loanService.getLoanById(request.getLoanId())
-                    .orElseThrow(() -> new RuntimeException("Loan not found with ID: " + request.getLoanId()));
+            Instant parsedDueAt = null;
+            if (dueAt != null && !dueAt.isBlank()) {
+                parsedDueAt = Instant.parse(dueAt);
+            }
 
-            // Fetch the authenticated user's account
-            Account userAccount = accountService.getAccountByAccountNumber(request.getPayerAccount())
-                    .orElseThrow(() -> new RuntimeException("Account not found with account number: " + request.getPayerAccount()));
+            Loan updatedLoan = loanService.approveLoan(id, username, parsedDueAt);
 
-            // Process the payment
-            Loan updatedLoan = loanService.pay(loan, userAccount);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Loan approved successfully",
+                    "loan", updatedLoan
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "error", e.getMessage()
+            ));
+        }
+    }
 
-            // Check if the loan was successfully paid
-            if (updatedLoan.getStatus() == Loan.LoanStatus.PAID_OFF) {
-                return ResponseEntity.ok(Map.of(
-                        "message", "Loan payment successful",
-                        "loan", updatedLoan
-                ));
-            } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
-                        "error", "Loan payment failed. Check account balance or loan details."
+    @PutMapping("/{id}/reject")
+    @ResponseBody
+    public ResponseEntity<?> rejectLoan(@PathVariable Long id) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = auth.getName();
+            if (username.equals("anonymousUser")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                        "error", "User is not authenticated."
                 ));
             }
 
+            Loan updatedLoan = loanService.rejectLoan(id, username);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Loan rejected successfully",
+                    "loan", updatedLoan
+            ));
         } catch (Exception e) {
-            // Handle errors and return a bad request response
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+    @PutMapping("/pay")
+    @ResponseBody
+    public ResponseEntity<?> payLoan(@RequestBody @Valid LoanPaymentRequest request) {
+        try {
+            System.out.println("Loan payment request received: " + request);
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = auth.getName();
+            if (username.equals("anonymousUser")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                        "error", "User is not authenticated."
+                ));
+            }
+
+            Loan loan = loanService.getLoanById(request.getLoanId())
+                    .orElseThrow(() -> new RuntimeException("Loan not found with ID: " + request.getLoanId()));
+
+            Account userAccount = accountService.getAccountByAccountNumber(request.getPayerAccount())
+                    .orElseThrow(() -> new RuntimeException("Account not found with account number: " + request.getPayerAccount()));
+
+            Loan updatedLoan = loanService.pay(loan, userAccount, request.getAmount(), username);
+
+            String message = updatedLoan.getStatus() == Loan.LoanStatus.PAID_OFF
+                    ? "Loan fully paid off"
+                    : "Loan payment successful";
+
+            return ResponseEntity.ok(Map.of(
+                    "message", message,
+                    "loan", updatedLoan
+            ));
+
+        } catch (Exception e) {
             System.out.println("Error during loan payment: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
                     "error", e.getMessage()

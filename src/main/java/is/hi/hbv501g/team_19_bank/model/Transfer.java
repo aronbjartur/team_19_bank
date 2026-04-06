@@ -98,4 +98,14 @@ public class Transfer {
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
+
+    private Long loanId;
+
+    public Long getLoanId() {
+        return loanId;
+    }
+
+    public void setLoanId(Long loanId) {
+        this.loanId = loanId;
+    }
 }

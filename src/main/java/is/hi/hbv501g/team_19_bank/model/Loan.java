@@ -15,31 +15,38 @@ public class Loan {
 
     @Column(nullable = false)
     private Double loanAmount;
-    // Gæti þurft að breyta þessu
 
     @Column(nullable = false)
     private String loanGiverAccount;
 
     @Column(nullable = false)
     private String loanReceiverAccount;
-    // Gæti þurft að eyða þessu
+
     @Column(nullable = false)
     private String authenticatedUser;
 
     private String memo;
-
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private LoanStatus status = LoanStatus.PENDING;
 
     private String failureReason = "";
+
     private Double interestRateAfterApproval = 1.05;
 
+    private Double remainingAmount;
+
+    private Instant approvedAt;
+
+    private Instant dueAt;
+
+    private Instant paidOffAt;
+
+    private Instant penaltyAppliedAt;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
-
 
     public enum LoanStatus {
         APPROVED,
@@ -83,7 +90,6 @@ public class Loan {
     public void setLoanAmount(Double loanAmount) {
         this.loanAmount = loanAmount;
     }
-
 
     public LoanStatus getStatus() {
         return status;
